@@ -1,0 +1,16 @@
+services:
+  db:
+    image: postgis/postgis:15-3.4
+    container_name: birdlog-db
+    restart: unless-stopped
+    ports:
+      - "5432:5432"
+    environment:
+      POSTGRES_USER: birdlog
+      POSTGRES_PASSWORD: birdlog
+      POSTGRES_DB: birdlog
+    volumes:
+      - birdlog-data:/var/lib/postgresql/data
+
+volumes:
+  birdlog-data:
