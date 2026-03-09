@@ -4,6 +4,7 @@ import express from "express";
 import cors from "cors";
 import { typeDefs } from "./schema/typeDefs.js";
 import { resolvers } from "./schema/resolvers.js";
+import { getContextUser, GraphQLContext } from './middleware/auth.js';
 
 const app = express();
 const port = process.env.PORT || 4000;
@@ -21,7 +22,13 @@ app.use(
     origin: ["http://localhost:5173", "http://localhost:3000"],
   }),
   express.json(),
-  expressMiddleware(server)
+  expressMiddleware(server, {
+    context: async ({ req }): Promise<GraphQLContext> => {
+      const token = req.headers.authorization;
+      const user = await getContextUser(token);
+      return { user };
+    },
+  })
 );
 
 app.listen(port, () => {

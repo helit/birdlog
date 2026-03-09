@@ -22,9 +22,26 @@ export const typeDefs = gql`
     createdAt: String!
   }
 
+  type User {
+    id: ID!
+    email: String!
+    name: String!
+  }
+
+  type AuthPayload {
+    token: String!
+    user: User!
+  }
+
   type Query {
     species: [Species!]!
     speciesById(id: ID!): Species
     searchSpecies(query: String!): [Species!]!
+    me: User
+  }
+
+  type Mutation {
+    register(email: String!, name: String!, password: String!): AuthPayload!
+    login(email: String!, password: String!): AuthPayload!
   }
 `;
