@@ -4,7 +4,7 @@ import express from "express";
 import cors from "cors";
 import { typeDefs } from "./schema/typeDefs.js";
 import { resolvers } from "./schema/resolvers.js";
-import { getContextUser, GraphQLContext } from './middleware/auth.js';
+import { getContextUser, GraphQLContext } from "./middleware/auth.js";
 
 const app = express();
 const port = process.env.PORT || 4000;
@@ -28,7 +28,7 @@ app.use(
       const user = await getContextUser(token);
       return { user };
     },
-  })
+  }),
 );
 
 app.listen(port, () => {

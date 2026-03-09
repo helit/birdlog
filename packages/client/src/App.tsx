@@ -33,9 +33,7 @@ function App() {
 
   const loading = searchQuery ? searchLoading : allLoading;
   const error = searchQuery ? searchError : allError;
-  const speciesList = searchQuery
-    ? searchData?.searchSpecies ?? []
-    : allData?.species ?? [];
+  const speciesList = searchQuery ? (searchData?.searchSpecies ?? []) : (allData?.species ?? []);
 
   return (
     <div className="app">
