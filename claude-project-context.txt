@@ -1,0 +1,112 @@
+BIRDLOG — Claude Project Context
+==================================
+Last updated: 2026-03-09
+Current phase: Phase 2 — Authentication (Steps 5–9 remaining)
+
+ABOUT
+-----
+Mobile-first Swedish birdwatching web app. Portfolio project to refresh backend skills.
+Repo: https://github.com/helit/birdlog
+
+TECH STACK
+----------
+- Frontend: React 18, TypeScript, Vite, Apollo Client 3
+- Backend: Node.js, Apollo Server 4, GraphQL, Express
+- Database: PostgreSQL + PostGIS via Docker Compose
+- ORM: Prisma
+- Auth: bcrypt + jsonwebtoken (JWT)
+- Monorepo: npm workspaces (packages/client, packages/server, packages/shared)
+- ES modules throughout ("type": "module" — imports use .js extension)
+- Dev server: tsx watch
+
+HOW TO RUN
+----------
+docker compose up -d
+npm run dev              (runs both client + server from root)
+Server: http://localhost:4000/graphql (Apollo Sandbox)
+Client: http://localhost:5173
+
+PROJECT PHASES
+--------------
+1. Scaffolding & database                    [DONE]
+2. Authentication                            [IN PROGRESS]
+3. Sighting log — CRUD, geolocation, life list
+4. PWA & offline basics
+5. Artdatabanken API integration
+6. AI bird identification (Claude API)
+7. Notifications & alerts (Web Push)
+8. Polish & portfolio prep
+
+PHASE 2 PROGRESS — AUTHENTICATION
+----------------------------------
+Step 1: Complete auth middleware             [DONE]
+  - packages/server/src/middleware/auth.ts
+  - Exports: AuthUser, GraphQLContext, generateToken, getContextUser, requireAuth
+  - JWT signed with userId, 72h expiry
+  - getContextUser: strips Bearer prefix, verifies JWT, looks up user in DB
+  - requireAuth: throws UNAUTHENTICATED GraphQLError if user is null
+
+Step 2: Update GraphQL typeDefs             [DONE]
+  - packages/server/src/schema/typeDefs.ts
+  - Added: User type, AuthPayload type, me query (nullable), Mutation type (register, login)
+
+Step 3: Update resolvers                    [DONE]
+  - packages/server/src/schema/resolvers.ts
+  - Query.me returns context.user
+  - Mutation.register: checks existing email, bcrypt.hash(12), creates user, returns token+user
+  - Mutation.login: finds by email, bcrypt.compare, returns token+user
+  - Uses generic 'Invalid credentials' error for both not-found and wrong-password
+
+Step 4: Wire auth context into index.ts     [DONE]
+  - packages/server/src/index.ts
+  - expressMiddleware gets context function that reads Authorization header, calls getContextUser
+  - Server-side auth tested and working via Apollo Sandbox (register, login, me all verified)
+
+Step 5: Client Apollo auth link             [NEXT — START HERE]
+  - packages/client/src/main.tsx
+  - Replace uri-based ApolloClient with createHttpLink + setContext authLink
+  - authLink reads token from localStorage and adds Authorization header
+
+Step 6: Client GraphQL mutations
+  - Create packages/client/src/graphql/mutations.ts
+  - LOGIN_MUTATION, REGISTER_MUTATION (returning token + user { id email name })
+  - Add ME_QUERY to packages/client/src/graphql/queries.ts
+
+Step 7: AuthProvider context
+  - Create packages/client/src/context/AuthContext.tsx
+  - Stores user + token in state, reads from localStorage on mount
+  - Calls ME_QUERY to rehydrate user on page refresh
+  - Exposes login(token, user), logout(), useAuth() hook
+
+Step 8: Login/Register pages
+  - Create packages/client/src/pages/LoginPage.tsx
+  - Create packages/client/src/pages/RegisterPage.tsx
+  - Controlled forms, useMutation, call useAuth().login on success
+
+Step 9: Update App.tsx
+  - Wrap with AuthProvider
+  - Gate on auth state: show login/register when not authenticated, species list when logged in
+  - Add logout button
+
+KEY FILES
+---------
+Server:
+  packages/server/src/middleware/auth.ts      — JWT auth middleware
+  packages/server/src/schema/typeDefs.ts      — GraphQL schema
+  packages/server/src/schema/resolvers.ts     — Query + Mutation resolvers
+  packages/server/src/index.ts                — Express + Apollo Server setup
+  packages/server/prisma/schema.prisma        — User, Species, Sighting models
+
+Client:
+  packages/client/src/main.tsx                — Apollo Client setup + React root
+  packages/client/src/App.tsx                 — Main app component (species list)
+  packages/client/src/graphql/queries.ts      — GET_ALL_SPECIES, SEARCH_SPECIES
+
+NOTES FOR AI ASSISTANT
+-----------------------
+- The user is coding this themselves for learning — guide, don't write code for them
+- Explain concepts when asked, especially GraphQL/Prisma/auth topics
+- The user prefers detailed explanations on backend concepts (weaker area)
+- ES module imports need .js extensions even for .ts files
+- @types/express was downgraded to v4 to fix Apollo Server type conflict
+- There is one test user registered in the DB (can be cleared with prisma migrate reset)
