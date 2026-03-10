@@ -1,7 +1,7 @@
 BIRDLOG — Claude Project Context
 ==================================
-Last updated: 2026-03-09
-Current phase: Phase 2 — Authentication (Steps 6–9 remaining)
+Last updated: 2026-03-10
+Current phase: Phase 2 — Authentication (Steps 7–9 remaining)
 
 ABOUT
 -----
@@ -37,6 +37,13 @@ PROJECT PHASES
 7. Notifications & alerts (Web Push)
 8. Polish & portfolio prep
 
+PHASE GATE RULE
+---------------
+Before moving from one phase to the next, give the user a mini quiz (5–8 questions)
+covering the key concepts from the completed phase. Mix question types: multiple choice,
+short answer, and "what would happen if…" scenarios. The user must demonstrate understanding
+before proceeding. This reinforces learning and ensures concepts stick.
+
 PHASE 2 PROGRESS — AUTHENTICATION
 ----------------------------------
 Step 1: Complete auth middleware             [DONE]
@@ -67,12 +74,12 @@ Step 5: Client Apollo auth link             [DONE]
   - Replaced uri-based ApolloClient with createHttpLink + setContext authLink
   - authLink reads token from localStorage and adds Authorization header
 
-Step 6: Client GraphQL mutations            [NEXT — START HERE]
-  - Create packages/client/src/graphql/mutations.ts
+Step 6: Client GraphQL mutations            [DONE]
+  - Created packages/client/src/graphql/mutations.ts
   - LOGIN_MUTATION, REGISTER_MUTATION (returning token + user { id email name })
-  - Add ME_QUERY to packages/client/src/graphql/queries.ts
+  - Added ME_QUERY to packages/client/src/graphql/queries.ts
 
-Step 7: AuthProvider context
+Step 7: AuthProvider context                [NEXT — START HERE]
   - Create packages/client/src/context/AuthContext.tsx
   - Stores user + token in state, reads from localStorage on mount
   - Calls ME_QUERY to rehydrate user on page refresh
@@ -100,7 +107,8 @@ Server:
 Client:
   packages/client/src/main.tsx                — Apollo Client setup + React root
   packages/client/src/App.tsx                 — Main app component (species list)
-  packages/client/src/graphql/queries.ts      — GET_ALL_SPECIES, SEARCH_SPECIES
+  packages/client/src/graphql/queries.ts      — GET_ALL_SPECIES, SEARCH_SPECIES, ME_QUERY
+  packages/client/src/graphql/mutations.ts    — LOGIN_MUTATION, REGISTER_MUTATION
 
 NOTES FOR AI ASSISTANT
 -----------------------
