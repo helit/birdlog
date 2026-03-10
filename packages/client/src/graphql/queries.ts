@@ -25,3 +25,13 @@ export const SEARCH_SPECIES = gql`
     }
   }
 `;
+
+export const ME_QUERY = gql`
+  query Me {
+    me {
+      id
+      email
+      name
+    }
+  }
+`;

@@ -1,7 +1,7 @@
 BIRDLOG — Claude Project Context
 ==================================
 Last updated: 2026-03-09
-Current phase: Phase 2 — Authentication (Steps 5–9 remaining)
+Current phase: Phase 2 — Authentication (Steps 6–9 remaining)
 
 ABOUT
 -----
@@ -62,12 +62,12 @@ Step 4: Wire auth context into index.ts     [DONE]
   - expressMiddleware gets context function that reads Authorization header, calls getContextUser
   - Server-side auth tested and working via Apollo Sandbox (register, login, me all verified)
 
-Step 5: Client Apollo auth link             [NEXT — START HERE]
+Step 5: Client Apollo auth link             [DONE]
   - packages/client/src/main.tsx
-  - Replace uri-based ApolloClient with createHttpLink + setContext authLink
+  - Replaced uri-based ApolloClient with createHttpLink + setContext authLink
   - authLink reads token from localStorage and adds Authorization header
 
-Step 6: Client GraphQL mutations
+Step 6: Client GraphQL mutations            [NEXT — START HERE]
   - Create packages/client/src/graphql/mutations.ts
   - LOGIN_MUTATION, REGISTER_MUTATION (returning token + user { id email name })
   - Add ME_QUERY to packages/client/src/graphql/queries.ts
