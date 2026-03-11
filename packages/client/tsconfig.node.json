@@ -4,7 +4,8 @@
     "lib": ["ES2022"],
     "module": "ESNext",
     "moduleResolution": "bundler",
-    "noEmit": true
+    "composite": true,
+    "noEmit": false
   },
   "include": ["vite.config.ts"]
 }

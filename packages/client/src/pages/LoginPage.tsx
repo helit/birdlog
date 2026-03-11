@@ -1,9 +1,23 @@
 import { FormEvent, useState } from "react";
-import { LOGIN_MUTATION } from "../graphql/mutations";
+import { LOGIN_MUTATION } from "../graphql/mutations.js";
 import { useMutation } from "@apollo/client";
-import { useAuth } from "../context/AuthContext";
+import { useAuth } from "../context/AuthContext.js";
+import { Button } from "@/components/ui/button.js";
+import { Input } from "@/components/ui/input.js";
+import { Label } from "@/components/ui/label.js";
+import {
+  Card,
+  CardContent,
+  CardDescription,
+  CardHeader,
+  CardTitle,
+} from "@/components/ui/card.js";
 
-const LoginPage = ({ onSwitchToRegister }: { onSwitchToRegister: () => void }) => {
+const LoginPage = ({
+  onSwitchToRegister,
+}: {
+  onSwitchToRegister: () => void;
+}) => {
   const [email, setEmail] = useState("");
   const [password, setPassword] = useState("");
   const [loginMutation, { loading, error }] = useMutation(LOGIN_MUTATION);
@@ -14,7 +28,9 @@ const LoginPage = ({ onSwitchToRegister }: { onSwitchToRegister: () => void }) =
     e.preventDefault();
 
     try {
-      const { data } = await loginMutation({ variables: { email, password } });
+      const { data } = await loginMutation({
+        variables: { email, password },
+      });
 
       if (data?.login) {
         login(data.login.token, data.login.user);
@@ -25,23 +41,56 @@ const LoginPage = ({ onSwitchToRegister }: { onSwitchToRegister: () => void }) =
   };
 
   return (
-    <div>
-      <h1>Logga in</h1>
-      <form onSubmit={handleSubmit}>
-        <input type="email" value={email} onChange={(e) => setEmail(e.target.value)}></input>
-        <input
-          type="password"
-          value={password}
-          onChange={(e) => setPassword(e.target.value)}
-        ></input>
-        <button type="submit" disabled={loading}>
-          Logga in
-        </button>
-        {error && <p>{error.message}</p>}
-        <button type="button" onClick={onSwitchToRegister}>
-          registrera
-        </button>
-      </form>
+    <div className="flex min-h-screen items-center justify-center p-4">
+      <Card className="w-full max-w-sm">
+        <CardHeader>
+          <CardTitle className="text-2xl">Logga in</CardTitle>
+          <CardDescription>
+            Ange din e-post och lösenord för att logga in
+          </CardDescription>
+        </CardHeader>
+        <CardContent>
+          <form onSubmit={handleSubmit} className="flex flex-col gap-4">
+            <div className="flex flex-col gap-2">
+              <Label htmlFor="email">E-post</Label>
+              <Input
+                id="email"
+                type="email"
+                placeholder="namn@exempel.se"
+                value={email}
+                onChange={(e) => setEmail(e.target.value)}
+                required
+              />
+            </div>
+            <div className="flex flex-col gap-2">
+              <Label htmlFor="password">Lösenord</Label>
+              <Input
+                id="password"
+                type="password"
+                value={password}
+                onChange={(e) => setPassword(e.target.value)}
+                required
+              />
+            </div>
+            {error && (
+              <p className="text-sm text-destructive">{error.message}</p>
+            )}
+            <Button type="submit" disabled={loading} className="w-full">
+              {loading ? "Loggar in..." : "Logga in"}
+            </Button>
+            <p className="text-center text-sm text-muted-foreground">
+              Har du inget konto?{" "}
+              <button
+                type="button"
+                onClick={onSwitchToRegister}
+                className="underline underline-offset-4 hover:text-primary"
+              >
+                Registrera dig
+              </button>
+            </p>
+          </form>
+        </CardContent>
+      </Card>
     </div>
   );
 };

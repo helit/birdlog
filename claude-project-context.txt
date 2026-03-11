@@ -1,7 +1,7 @@
 BIRDLOG — Claude Project Context
 ==================================
 Last updated: 2026-03-11
-Current phase: Phase 2 — Authentication (Step 9 remaining)
+Current phase: Phase 2 — Authentication [DONE] → Ready for Phase 3
 
 ABOUT
 -----
@@ -10,7 +10,7 @@ Repo: https://github.com/helit/birdlog
 
 TECH STACK
 ----------
-- Frontend: React 18, TypeScript, Vite, Apollo Client 3
+- Frontend: React 18, TypeScript, Vite, Apollo Client 3, Tailwind CSS 4, shadcn/ui
 - Backend: Node.js, Apollo Server 4, GraphQL, Express
 - Database: PostgreSQL + PostGIS via Docker Compose
 - ORM: Prisma
@@ -29,7 +29,7 @@ Client: http://localhost:5173
 PROJECT PHASES
 --------------
 1. Scaffolding & database                    [DONE]
-2. Authentication                            [IN PROGRESS]
+2. Authentication                            [DONE]
 3. Sighting log — CRUD, geolocation, life list
 4. PWA & offline basics
 5. Artdatabanken API integration
@@ -91,10 +91,19 @@ Step 8: Login/Register pages               [DONE]
   - RegisterPage.tsx: same pattern with name field, REGISTER_MUTATION, data.register
   - Both pages accept onSwitchToRegister/onSwitchToLogin callback props
 
-Step 9: Update App.tsx                     [NEXT — START HERE]
-  - Wrap with AuthProvider
-  - Gate on auth state: show login/register when not authenticated, species list when logged in
-  - Add logout button
+Step 9: Update App.tsx                      [DONE]
+  - Wrapped App with AuthProvider in main.tsx (inside ApolloProvider)
+  - Auth gating: shows LoginPage/RegisterPage when not authenticated, species list when logged in
+  - Queries skip when !user to avoid unnecessary requests
+  - Logout button + greeting in header
+
+STYLING
+-------
+- Replaced custom CSS with Tailwind CSS 4 + shadcn/ui component library
+- shadcn components used: Button, Input, Label, Card
+- Path alias configured: @/* → ./src/* (vite.config.ts + tsconfig.json)
+- All pages restyled with shadcn defaults (LoginPage, RegisterPage, App.tsx)
+- shadcn config: packages/client/components.json
 
 KEY FILES
 ---------
@@ -107,12 +116,14 @@ Server:
 
 Client:
   packages/client/src/main.tsx                — Apollo Client setup + React root (authLink + httpLink)
-  packages/client/src/App.tsx                 — Main app component (species list)
+  packages/client/src/App.tsx                 — Main app component (auth gating + species list)
   packages/client/src/graphql/queries.ts      — GET_ALL_SPECIES, SEARCH_SPECIES, ME_QUERY
   packages/client/src/graphql/mutations.ts    — LOGIN_MUTATION, REGISTER_MUTATION
   packages/client/src/context/AuthContext.tsx  — AuthProvider, useAuth hook
-  packages/client/src/pages/LoginPage.tsx     — Login form (done)
-  packages/client/src/pages/RegisterPage.tsx  — Register form (done)
+  packages/client/src/pages/LoginPage.tsx     — Login form (shadcn Card + Input)
+  packages/client/src/pages/RegisterPage.tsx  — Register form (shadcn Card + Input)
+  packages/client/src/components/ui/          — shadcn UI components (button, input, label, card)
+  packages/client/src/lib/utils.ts            — cn() utility for Tailwind class merging
 
 NOTES FOR AI ASSISTANT
 -----------------------

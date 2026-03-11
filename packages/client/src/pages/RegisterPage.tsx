@@ -1,13 +1,28 @@
 import { FormEvent, useState } from "react";
-import { REGISTER_MUTATION } from "../graphql/mutations";
+import { REGISTER_MUTATION } from "../graphql/mutations.js";
 import { useMutation } from "@apollo/client";
-import { useAuth } from "../context/AuthContext";
+import { useAuth } from "../context/AuthContext.js";
+import { Button } from "@/components/ui/button.js";
+import { Input } from "@/components/ui/input.js";
+import { Label } from "@/components/ui/label.js";
+import {
+  Card,
+  CardContent,
+  CardDescription,
+  CardHeader,
+  CardTitle,
+} from "@/components/ui/card.js";
 
-const RegisterPage = ({ onSwitchToLogin }: { onSwitchToLogin: () => void }) => {
+const RegisterPage = ({
+  onSwitchToLogin,
+}: {
+  onSwitchToLogin: () => void;
+}) => {
   const [name, setName] = useState("");
   const [email, setEmail] = useState("");
   const [password, setPassword] = useState("");
-  const [registerMutation, { loading, error }] = useMutation(REGISTER_MUTATION);
+  const [registerMutation, { loading, error }] =
+    useMutation(REGISTER_MUTATION);
 
   const { login } = useAuth();
 
@@ -15,7 +30,9 @@ const RegisterPage = ({ onSwitchToLogin }: { onSwitchToLogin: () => void }) => {
     e.preventDefault();
 
     try {
-      const { data } = await registerMutation({ variables: { name, email, password } });
+      const { data } = await registerMutation({
+        variables: { name, email, password },
+      });
 
       if (data?.register) {
         login(data.register.token, data.register.user);
@@ -26,24 +43,67 @@ const RegisterPage = ({ onSwitchToLogin }: { onSwitchToLogin: () => void }) => {
   };
 
   return (
-    <div>
-      <h1>Ny användare</h1>
-      <form onSubmit={handleSubmit}>
-        <input type="text" value={name} onChange={(e) => setName(e.target.value)}></input>
-        <input type="email" value={email} onChange={(e) => setEmail(e.target.value)}></input>
-        <input
-          type="password"
-          value={password}
-          onChange={(e) => setPassword(e.target.value)}
-        ></input>
-        <button type="submit" disabled={loading}>
-          Registrera
-        </button>
-        {error && <p>{error.message}</p>}
-        <button type="button" onClick={onSwitchToLogin}>
-          Logga in
-        </button>
-      </form>
+    <div className="flex min-h-screen items-center justify-center p-4">
+      <Card className="w-full max-w-sm">
+        <CardHeader>
+          <CardTitle className="text-2xl">Ny användare</CardTitle>
+          <CardDescription>
+            Skapa ett konto för att börja logga fåglar
+          </CardDescription>
+        </CardHeader>
+        <CardContent>
+          <form onSubmit={handleSubmit} className="flex flex-col gap-4">
+            <div className="flex flex-col gap-2">
+              <Label htmlFor="name">Namn</Label>
+              <Input
+                id="name"
+                type="text"
+                placeholder="Ditt namn"
+                value={name}
+                onChange={(e) => setName(e.target.value)}
+                required
+              />
+            </div>
+            <div className="flex flex-col gap-2">
+              <Label htmlFor="email">E-post</Label>
+              <Input
+                id="email"
+                type="email"
+                placeholder="namn@exempel.se"
+                value={email}
+                onChange={(e) => setEmail(e.target.value)}
+                required
+              />
+            </div>
+            <div className="flex flex-col gap-2">
+              <Label htmlFor="password">Lösenord</Label>
+              <Input
+                id="password"
+                type="password"
+                value={password}
+                onChange={(e) => setPassword(e.target.value)}
+                required
+              />
+            </div>
+            {error && (
+              <p className="text-sm text-destructive">{error.message}</p>
+            )}
+            <Button type="submit" disabled={loading} className="w-full">
+              {loading ? "Registrerar..." : "Registrera"}
+            </Button>
+            <p className="text-center text-sm text-muted-foreground">
+              Har du redan ett konto?{" "}
+              <button
+                type="button"
+                onClick={onSwitchToLogin}
+                className="underline underline-offset-4 hover:text-primary"
+              >
+                Logga in
+              </button>
+            </p>
+          </form>
+        </CardContent>
+      </Card>
     </div>
   );
 };

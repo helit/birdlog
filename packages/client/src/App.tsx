@@ -4,6 +4,9 @@ import { GET_ALL_SPECIES, SEARCH_SPECIES } from "./graphql/queries.js";
 import { useAuth } from "./context/AuthContext.js";
 import LoginPage from "./pages/LoginPage.js";
 import RegisterPage from "./pages/RegisterPage.js";
+import { Button } from "@/components/ui/button.js";
+import { Input } from "@/components/ui/input.js";
+import { Card, CardContent } from "@/components/ui/card.js";
 
 interface Species {
   id: string;
@@ -39,7 +42,9 @@ function App() {
 
   const loading = searchQuery ? searchLoading : allLoading;
   const error = searchQuery ? searchError : allError;
-  const speciesList = searchQuery ? (searchData?.searchSpecies ?? []) : (allData?.species ?? []);
+  const speciesList = searchQuery
+    ? (searchData?.searchSpecies ?? [])
+    : (allData?.species ?? []);
 
   if (!user && !showRegister) {
     return <LoginPage onSwitchToRegister={() => setShowRegister(true)} />;
@@ -50,38 +55,64 @@ function App() {
   }
 
   return (
-    <div className="app">
-      <button onClick={logout}>logga ut</button>
-      <header className="app-header">
-        <h1>BirdLog</h1>
-        <p>Din fältguide till svenska fåglar</p>
+    <div className="mx-auto min-h-screen max-w-md p-4">
+      <header className="mb-6 flex items-center justify-between border-b pb-4">
+        <div>
+          <h1 className="text-xl font-bold">BirdLog</h1>
+          <p className="text-sm text-muted-foreground">
+            Din fältguide till svenska fåglar
+          </p>
+        </div>
+        <Button variant="outline" size="sm" onClick={logout}>
+          Logga ut
+        </Button>
       </header>
 
-      <p>{`Hej ${user?.name}!`}</p>
+      <p className="mb-4 text-sm text-muted-foreground">
+        Hej {user?.name}!
+      </p>
 
-      <input
-        className="search-input"
+      <Input
         type="text"
         placeholder="Sök arter..."
         value={searchQuery}
         onChange={(e) => setSearchQuery(e.target.value)}
+        className="mb-4"
       />
 
-      {loading && <p className="loading">Laddar arter...</p>}
-      {error && <p className="error">Kunde inte ladda arter. Kör servern?</p>}
+      {loading && (
+        <p className="py-12 text-center text-muted-foreground">
+          Laddar arter...
+        </p>
+      )}
+      {error && (
+        <p className="py-12 text-center text-destructive">
+          Kunde inte ladda arter. Kör servern?
+        </p>
+      )}
 
       {!loading && !error && (
         <>
-          <p className="species-count">{speciesList.length} arter</p>
-          <ul className="species-list">
+          <p className="mb-3 text-xs text-muted-foreground">
+            {speciesList.length} arter
+          </p>
+          <div className="flex flex-col gap-2">
             {speciesList.map((s) => (
-              <li key={s.id} className="species-card">
-                <div className="species-name">{s.swedishName}</div>
-                <div className="species-scientific">{s.scientificName}</div>
-                {s.family && <div className="species-family">{s.family}</div>}
-              </li>
+              <Card key={s.id}>
+                <CardContent className="p-3">
+                  <div className="font-medium">{s.swedishName}</div>
+                  <div className="text-xs italic text-muted-foreground">
+                    {s.scientificName}
+                  </div>
+                  {s.family && (
+                    <div className="mt-1 text-xs text-muted-foreground">
+                      {s.family}
+                    </div>
+                  )}
+                </CardContent>
+              </Card>
             ))}
-          </ul>
+          </div>
         </>
       )}
     </div>
