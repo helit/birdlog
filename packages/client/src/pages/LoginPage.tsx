@@ -25,15 +25,24 @@ const LoginPage = ({ onSwitchToRegister }: { onSwitchToRegister: () => void }) =
   };
 
   return (
-    <form onSubmit={handleSubmit}>
-      <input type="email" value={email} onChange={(e) => setEmail(e.target.value)}></input>
-      <input type="password" value={password} onChange={(e) => setPassword(e.target.value)}></input>
-      <button type="submit" disabled={loading}></button>
-      {error && <p>{error.message}</p>}
-      <button type="button" onClick={onSwitchToRegister}>
-        registrera
-      </button>
-    </form>
+    <div>
+      <h1>Logga in</h1>
+      <form onSubmit={handleSubmit}>
+        <input type="email" value={email} onChange={(e) => setEmail(e.target.value)}></input>
+        <input
+          type="password"
+          value={password}
+          onChange={(e) => setPassword(e.target.value)}
+        ></input>
+        <button type="submit" disabled={loading}>
+          Logga in
+        </button>
+        {error && <p>{error.message}</p>}
+        <button type="button" onClick={onSwitchToRegister}>
+          registrera
+        </button>
+      </form>
+    </div>
   );
 };
 

@@ -26,16 +26,25 @@ const RegisterPage = ({ onSwitchToLogin }: { onSwitchToLogin: () => void }) => {
   };
 
   return (
-    <form onSubmit={handleSubmit}>
-      <input type="text" value={name} onChange={(e) => setName(e.target.value)}></input>
-      <input type="email" value={email} onChange={(e) => setEmail(e.target.value)}></input>
-      <input type="password" value={password} onChange={(e) => setPassword(e.target.value)}></input>
-      <button type="submit" disabled={loading}></button>
-      {error && <p>{error.message}</p>}
-      <button type="button" onClick={onSwitchToLogin}>
-        har redan ett konto
-      </button>
-    </form>
+    <div>
+      <h1>Ny användare</h1>
+      <form onSubmit={handleSubmit}>
+        <input type="text" value={name} onChange={(e) => setName(e.target.value)}></input>
+        <input type="email" value={email} onChange={(e) => setEmail(e.target.value)}></input>
+        <input
+          type="password"
+          value={password}
+          onChange={(e) => setPassword(e.target.value)}
+        ></input>
+        <button type="submit" disabled={loading}>
+          Registrera
+        </button>
+        {error && <p>{error.message}</p>}
+        <button type="button" onClick={onSwitchToLogin}>
+          Logga in
+        </button>
+      </form>
+    </div>
   );
 };
 

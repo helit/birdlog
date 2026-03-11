@@ -1,6 +1,9 @@
 import { useState } from "react";
 import { useQuery } from "@apollo/client";
 import { GET_ALL_SPECIES, SEARCH_SPECIES } from "./graphql/queries.js";
+import { useAuth } from "./context/AuthContext.js";
+import LoginPage from "./pages/LoginPage.js";
+import RegisterPage from "./pages/RegisterPage.js";
 
 interface Species {
   id: string;
@@ -12,6 +15,9 @@ interface Species {
 }
 
 function App() {
+  const { user, logout } = useAuth();
+  const [showRegister, setShowRegister] = useState(false);
+
   const [searchQuery, setSearchQuery] = useState("");
 
   const {
@@ -19,7 +25,7 @@ function App() {
     loading: allLoading,
     error: allError,
   } = useQuery<{ species: Species[] }>(GET_ALL_SPECIES, {
-    skip: searchQuery.length > 0,
+    skip: !user || searchQuery.length > 0,
   });
 
   const {
@@ -28,19 +34,30 @@ function App() {
     error: searchError,
   } = useQuery<{ searchSpecies: Species[] }>(SEARCH_SPECIES, {
     variables: { query: searchQuery },
-    skip: searchQuery.length === 0,
+    skip: !user || searchQuery.length === 0,
   });
 
   const loading = searchQuery ? searchLoading : allLoading;
   const error = searchQuery ? searchError : allError;
   const speciesList = searchQuery ? (searchData?.searchSpecies ?? []) : (allData?.species ?? []);
 
+  if (!user && !showRegister) {
+    return <LoginPage onSwitchToRegister={() => setShowRegister(true)} />;
+  }
+
+  if (!user && showRegister) {
+    return <RegisterPage onSwitchToLogin={() => setShowRegister(false)} />;
+  }
+
   return (
     <div className="app">
+      <button onClick={logout}>logga ut</button>
       <header className="app-header">
         <h1>BirdLog</h1>
         <p>Din fältguide till svenska fåglar</p>
       </header>
+
+      <p>{`Hej ${user?.name}!`}</p>
 
       <input
         className="search-input"
