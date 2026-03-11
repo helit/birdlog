@@ -1,7 +1,7 @@
 BIRDLOG — Claude Project Context
 ==================================
-Last updated: 2026-03-10
-Current phase: Phase 2 — Authentication (Steps 7–9 remaining)
+Last updated: 2026-03-11
+Current phase: Phase 2 — Authentication (Step 9 remaining)
 
 ABOUT
 -----
@@ -79,18 +79,19 @@ Step 6: Client GraphQL mutations            [DONE]
   - LOGIN_MUTATION, REGISTER_MUTATION (returning token + user { id email name })
   - Added ME_QUERY to packages/client/src/graphql/queries.ts
 
-Step 7: AuthProvider context                [NEXT — START HERE]
-  - Create packages/client/src/context/AuthContext.tsx
+Step 7: AuthProvider context                [DONE]
+  - Created packages/client/src/context/AuthContext.tsx
   - Stores user + token in state, reads from localStorage on mount
-  - Calls ME_QUERY to rehydrate user on page refresh
+  - useQuery(ME_QUERY, { skip: !token }) with onCompleted to rehydrate user on refresh
   - Exposes login(token, user), logout(), useAuth() hook
+  - login saves to localStorage + sets state; logout clears both + client.resetStore()
 
-Step 8: Login/Register pages
-  - Create packages/client/src/pages/LoginPage.tsx
-  - Create packages/client/src/pages/RegisterPage.tsx
-  - Controlled forms, useMutation, call useAuth().login on success
+Step 8: Login/Register pages               [DONE]
+  - LoginPage.tsx: controlled form, useMutation(LOGIN_MUTATION), useAuth().login on success
+  - RegisterPage.tsx: same pattern with name field, REGISTER_MUTATION, data.register
+  - Both pages accept onSwitchToRegister/onSwitchToLogin callback props
 
-Step 9: Update App.tsx
+Step 9: Update App.tsx                     [NEXT — START HERE]
   - Wrap with AuthProvider
   - Gate on auth state: show login/register when not authenticated, species list when logged in
   - Add logout button
@@ -105,10 +106,13 @@ Server:
   packages/server/prisma/schema.prisma        — User, Species, Sighting models
 
 Client:
-  packages/client/src/main.tsx                — Apollo Client setup + React root
+  packages/client/src/main.tsx                — Apollo Client setup + React root (authLink + httpLink)
   packages/client/src/App.tsx                 — Main app component (species list)
   packages/client/src/graphql/queries.ts      — GET_ALL_SPECIES, SEARCH_SPECIES, ME_QUERY
   packages/client/src/graphql/mutations.ts    — LOGIN_MUTATION, REGISTER_MUTATION
+  packages/client/src/context/AuthContext.tsx  — AuthProvider, useAuth hook
+  packages/client/src/pages/LoginPage.tsx     — Login form (done)
+  packages/client/src/pages/RegisterPage.tsx  — Register form (done)
 
 NOTES FOR AI ASSISTANT
 -----------------------
