@@ -1,5 +1,5 @@
 import { PrismaClient } from "@prisma/client";
-import { generateToken, GraphQLContext } from "../middleware/auth.js";
+import { generateToken, GraphQLContext, requireAuth } from "../middleware/auth.js";
 import { GraphQLError } from "graphql";
 import bcrypt from "bcrypt";
 
@@ -14,6 +14,25 @@ interface RegisterArgs {
 interface LoginArgs {
   email: string;
   password: string;
+}
+
+interface CreateSightingArgs {
+  speciesId: string;
+  latitude: number;
+  longitude: number;
+  location: string | null;
+  notes: string | null;
+  date: string;
+}
+
+interface UpdateSightingArgs {
+  id: string;
+  speciesId?: string;
+  latitude?: number;
+  longitude?: number;
+  location?: string | null;
+  notes?: string | null;
+  date?: string;
 }
 
 export const resolvers = {
@@ -44,6 +63,16 @@ export const resolvers = {
     me: (_: unknown, __: unknown, context: GraphQLContext) => {
       return context.user;
     },
+
+    mySightings: async (_: unknown, __: unknown, context: GraphQLContext) => {
+      const user = requireAuth(context.user);
+
+      return await prisma.sighting.findMany({
+        where: { userId: user.id },
+        include: { species: true },
+        orderBy: { date: "desc" },
+      });
+    },
   },
 
   Mutation: {
@@ -67,6 +96,68 @@ export const resolvers = {
       if (!valid) throw new GraphQLError("Invalid credentials");
 
       return { token: generateToken(user), user };
+    },
+    createSighting: async (
+      _: unknown,
+      { speciesId, latitude, longitude, location, notes, date }: CreateSightingArgs,
+      context: GraphQLContext,
+    ) => {
+      const user = requireAuth(context.user);
+
+      return await prisma.sighting.create({
+        data: {
+          speciesId,
+          latitude,
+          longitude,
+          location,
+          notes,
+          date: new Date(date),
+          userId: user.id,
+        },
+        include: { species: true },
+      });
+    },
+    updateSighting: async (
+      _: unknown,
+      { id, speciesId, latitude, longitude, location, notes, date }: UpdateSightingArgs,
+      context: GraphQLContext,
+    ) => {
+      const user = requireAuth(context.user);
+      const sighting = await prisma.sighting.findUnique({
+        where: { id },
+      });
+
+      if (!sighting) throw new GraphQLError("Sighting not found.");
+
+      if (sighting.userId !== user.id)
+        throw new GraphQLError("Not authorized", {
+          extensions: { code: "FORBIDDEN" },
+        });
+
+      const data: Record<string, unknown> = {};
+      if (speciesId !== undefined) data.speciesId = speciesId;
+      if (latitude !== undefined) data.latitude = latitude;
+      if (longitude !== undefined) data.longitude = longitude;
+      if (location !== undefined) data.location = location;
+      if (notes !== undefined) data.notes = notes;
+      if (date !== undefined) data.date = new Date(date);
+
+      return await prisma.sighting.update({ where: { id }, data, include: { species: true } });
+    },
+    deleteSighting: async (_: unknown, { id }: { id: string }, context: GraphQLContext) => {
+      const user = requireAuth(context.user);
+      const sighting = await prisma.sighting.findUnique({ where: { id } });
+
+      if (!sighting) throw new GraphQLError("Sighting not found.");
+
+      if (sighting.userId !== user.id)
+        throw new GraphQLError("Not authorized", {
+          extensions: { code: "FORBIDDEN" },
+        });
+
+      await prisma.sighting.delete({ where: { id } });
+
+      return true;
     },
   },
 };

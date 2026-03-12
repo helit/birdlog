@@ -55,11 +55,12 @@ before proceeding. This reinforces learning and ensures concepts stick.
 - `updateSighting` args: id (required), all others optional for partial updates
 - `deleteSighting` returns `Boolean!`
 
-### Step 2: Implement resolvers [IN PROGRESS]
-- `mySightings` query: done — requireAuth, findMany filtered by userId, includes species
-- `createSighting` mutation: done — requireAuth, prisma.sighting.create with new Date(date), includes species
-- `updateSighting` mutation: TODO — needs ownership check (sighting.userId === user.id)
-- `deleteSighting` mutation: TODO — needs ownership check
+### Step 2: Implement resolvers [DONE]
+- `mySightings` query: requireAuth, findMany filtered by userId, includes species, ordered by date desc
+- `createSighting` mutation: requireAuth, prisma.sighting.create with new Date(date), includes species
+- `updateSighting` mutation: requireAuth, ownership check (sighting.userId !== user.id → FORBIDDEN), partial update with only defined fields, includes species
+- `deleteSighting` mutation: requireAuth, ownership check, prisma.sighting.delete, returns true
+- All mutations tested and verified in Apollo Sandbox
 
 ### Step 3: Client GraphQL operations
 ### Step 4: Sighting form page (species picker, date, geolocation, notes)
