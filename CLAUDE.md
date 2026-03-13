@@ -1,6 +1,6 @@
 # BIRDLOG — Claude Project Context
 
-Last updated: 2026-03-12
+Last updated: 2026-03-13
 Current phase: Phase 3 — Sighting Log [IN PROGRESS]
 
 ## About
@@ -35,7 +35,7 @@ npm run dev              # runs both client + server from root
 3. Sighting log — CRUD, geolocation, life list [IN PROGRESS]
 4. PWA & offline basics
 5. Artdatabanken API integration
-6. AI bird identification (Claude API)
+6. AI bird identification (Claude API) — NOTE: User wants to discuss UX/design for this before implementation
 7. Notifications & alerts (Web Push)
 8. Polish & portfolio prep
 
@@ -62,8 +62,21 @@ before proceeding. This reinforces learning and ensures concepts stick.
 - `deleteSighting` mutation: requireAuth, ownership check, prisma.sighting.delete, returns true
 - All mutations tested and verified in Apollo Sandbox
 
-### Step 3: Client GraphQL operations
-### Step 4: Sighting form page (species picker, date, geolocation, notes)
+### Step 3: Client GraphQL operations [DONE]
+- Added MY_SIGHTINGS query in queries.ts (fetches sightings with species, location, notes, date)
+- Added CREATE_SIGHTING, UPDATE_SIGHTING, DELETE_SIGHTING mutations in mutations.ts
+- UPDATE_SIGHTING supports all optional fields for partial updates (speciesId, latitude, longitude, location, notes, date)
+
+### Step 4: Sighting form page [DONE]
+- Species picker: Popover + Command (cmdk) combobox with server-side search via SEARCH_SPECIES (useLazyQuery, shouldFilter={false})
+- Date input: defaults to today, user can override for past sightings
+- Geolocation: auto-fetches on mount via useEffect + navigator.geolocation, "Uppdatera position" button to re-fetch
+- Location name: optional text input for human-readable place name
+- Notes: optional textarea
+- Submit: useMutation with CREATE_SIGHTING, button disabled until required fields filled (speciesId, lat/lng, date)
+- Basic mobile-first styling with Card layout, labels, and gap spacing
+- NOTE: App.tsx temporarily renders SightingFormPage directly (line 55: `return <SightingFormPage />`), bypassing the species list. Revert when adding routing in Step 7.
+
 ### Step 5: Sightings list page (view, edit, delete)
 ### Step 6: Life list page (unique species seen)
 ### Step 7: Navigation/routing (react-router)
@@ -84,7 +97,7 @@ before proceeding. This reinforces learning and ensures concepts stick.
 ## Styling
 
 - Tailwind CSS 4 + shadcn/ui component library
-- shadcn components used: Button, Input, Label, Card
+- shadcn components used: Button, Input, Label, Card, Command, Popover, Textarea
 - Path alias: @/* → ./src/* (vite.config.ts + tsconfig.json)
 - shadcn config: packages/client/components.json
 
@@ -100,12 +113,13 @@ before proceeding. This reinforces learning and ensures concepts stick.
 ### Client
 - `packages/client/src/main.tsx` — Apollo Client setup + React root (authLink + httpLink)
 - `packages/client/src/App.tsx` — Main app component (auth gating + species list)
-- `packages/client/src/graphql/queries.ts` — GET_ALL_SPECIES, SEARCH_SPECIES, ME_QUERY
-- `packages/client/src/graphql/mutations.ts` — LOGIN_MUTATION, REGISTER_MUTATION
+- `packages/client/src/graphql/queries.ts` — GET_ALL_SPECIES, SEARCH_SPECIES, ME_QUERY, MY_SIGHTINGS
+- `packages/client/src/graphql/mutations.ts` — LOGIN_MUTATION, REGISTER_MUTATION, CREATE_SIGHTING, UPDATE_SIGHTING, DELETE_SIGHTING
 - `packages/client/src/context/AuthContext.tsx` — AuthProvider, useAuth hook
 - `packages/client/src/pages/LoginPage.tsx` — Login form (shadcn Card + Input)
 - `packages/client/src/pages/RegisterPage.tsx` — Register form (shadcn Card + Input)
-- `packages/client/src/components/ui/` — shadcn UI components (button, input, label, card)
+- `packages/client/src/pages/SightingFormPage.tsx` — Create sighting form (species combobox, date, geolocation, notes)
+- `packages/client/src/components/ui/` — shadcn UI components (button, input, label, card, command, popover, textarea)
 - `packages/client/src/lib/utils.ts` — cn() utility for Tailwind class merging
 
 ## Notes for AI Assistant
@@ -116,3 +130,7 @@ before proceeding. This reinforces learning and ensures concepts stick.
 - ES module imports need .js extensions even for .ts files
 - @types/express was downgraded to v4 to fix Apollo Server type conflict
 - There is one test user registered in the DB (can be cleared with prisma migrate reset)
+
+## Future TODO
+
+- Set up GraphQL Code Generator to auto-generate TypeScript types from the schema (no intellisense/autocomplete on GQL responses currently)

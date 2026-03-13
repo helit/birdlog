@@ -35,3 +35,26 @@ export const ME_QUERY = gql`
     }
   }
 `;
+
+export const MY_SIGHTINGS = gql`
+  query MySightings {
+    mySightings {
+      id
+      species {
+        id
+        swedishName
+        scientificName
+        englishName
+        family
+        description
+        imageUrl
+      }
+      latitude
+      longitude
+      location
+      notes
+      date
+      createdAt
+    }
+  }
+`;
