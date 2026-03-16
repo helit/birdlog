@@ -1,6 +1,6 @@
 # BIRDLOG — Claude Project Context
 
-Last updated: 2026-03-13
+Last updated: 2026-03-16
 Current phase: Phase 3 — Sighting Log [IN PROGRESS]
 
 ## About
@@ -77,7 +77,16 @@ before proceeding. This reinforces learning and ensures concepts stick.
 - Basic mobile-first styling with Card layout, labels, and gap spacing
 - NOTE: App.tsx temporarily renders SightingFormPage directly (line 55: `return <SightingFormPage />`), bypassing the species list. Revert when adding routing in Step 7.
 
-### Step 5: Sightings list page (view, edit, delete)
+### Step 5: Sightings list page (view, edit, delete) [DONE]
+- SightingsListPage: useQuery(MY_SIGHTINGS), loading state with Spinner, renders SightingCard per sighting
+- SightingCard component: displays species name (swedish + scientific), formatted date (date-fns + sv locale), coordinates, optional location/notes
+- Delete: useMutation(DELETE_SIGHTING) with refetchQueries, toast.success/error via sonner, loading spinner on button
+- Edit button: present but disabled — will be wired up in Step 7 with routing (reuse SightingFormPage pre-filled)
+- Server: added Sighting field resolvers for date/createdAt → toISOString() so dates come as ISO strings instead of timestamps
+- Server: mySightings orderBy uses compound sort [{ date: "desc" }, { id: "desc" }]
+- Toast notifications: sonner Toaster in App.tsx (position="bottom-center"), toast() calls in SightingCard
+- NOTE: App.tsx temporarily renders SightingsListPage directly, bypassing the species list. Revert when adding routing in Step 7.
+
 ### Step 6: Life list page (unique species seen)
 ### Step 7: Navigation/routing (react-router)
 
@@ -97,7 +106,7 @@ before proceeding. This reinforces learning and ensures concepts stick.
 ## Styling
 
 - Tailwind CSS 4 + shadcn/ui component library
-- shadcn components used: Button, Input, Label, Card, Command, Popover, Textarea
+- shadcn components used: Button, Input, Label, Card, Command, Popover, Textarea, Sonner (toast)
 - Path alias: @/* → ./src/* (vite.config.ts + tsconfig.json)
 - shadcn config: packages/client/components.json
 
@@ -119,7 +128,9 @@ before proceeding. This reinforces learning and ensures concepts stick.
 - `packages/client/src/pages/LoginPage.tsx` — Login form (shadcn Card + Input)
 - `packages/client/src/pages/RegisterPage.tsx` — Register form (shadcn Card + Input)
 - `packages/client/src/pages/SightingFormPage.tsx` — Create sighting form (species combobox, date, geolocation, notes)
-- `packages/client/src/components/ui/` — shadcn UI components (button, input, label, card, command, popover, textarea)
+- `packages/client/src/pages/SightingsListPage.tsx` — Sightings list (useQuery MY_SIGHTINGS, renders SightingCards)
+- `packages/client/src/components/SightingCard.tsx` — Sighting card (delete with toast, edit button disabled, date-fns formatting)
+- `packages/client/src/components/ui/` — shadcn UI components (button, input, label, card, command, popover, textarea, sonner)
 - `packages/client/src/lib/utils.ts` — cn() utility for Tailwind class merging
 
 ## Notes for AI Assistant
