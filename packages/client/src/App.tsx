@@ -7,16 +7,9 @@ import RegisterPage from "./pages/RegisterPage.js";
 import { Button } from "@/components/ui/button.js";
 import { Input } from "@/components/ui/input.js";
 import { Card, CardContent } from "@/components/ui/card.js";
-import SightingFormPage from "./pages/SightingFormPage.js";
-
-interface Species {
-  id: string;
-  swedishName: string;
-  scientificName: string;
-  englishName?: string | null;
-  family?: string | null;
-  description?: string | null;
-}
+import { Species } from "./utils/types.js";
+import { Toaster } from "sonner";
+import SightingsListPage from "./pages/SightingsListPage.js";
 
 function App() {
   const { user, logout } = useAuth();
@@ -53,7 +46,19 @@ function App() {
     return <RegisterPage onSwitchToLogin={() => setShowRegister(false)} />;
   }
 
-  return <SightingFormPage />;
+  return (
+    <div>
+      <SightingsListPage />
+      <Toaster position="bottom-center" />
+    </div>
+  );
+
+  // return (
+  //   <div>
+  //     <SightingFormPage />
+  //     <Toaster position="bottom-center"/>
+  //   </div>
+  // );
 
   return (
     <div className="mx-auto min-h-screen max-w-md p-4">

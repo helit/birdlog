@@ -15,6 +15,7 @@ import { CREATE_SIGHTING } from "@/graphql/mutations";
 import { SEARCH_SPECIES } from "@/graphql/queries";
 import { useLazyQuery, useMutation } from "@apollo/client";
 import { useEffect, useState } from "react";
+import { toast } from "sonner";
 
 const SightingFormPage = () => {
   const [speciesId, setSpeciesId] = useState("");
@@ -23,9 +24,8 @@ const SightingFormPage = () => {
   const [location, setLocation] = useState("");
   const [notes, setNotes] = useState("");
   const [date, setDate] = useState(new Date().toISOString().split("T")[0]);
-  const [searchTerm, setSearchTerm] = useState("");
 
-  const [executeSearch, { data, loading }] = useLazyQuery(SEARCH_SPECIES);
+  const [executeSearch, { data }] = useLazyQuery(SEARCH_SPECIES);
 
   const [open, setOpen] = useState(false);
 
@@ -37,7 +37,21 @@ const SightingFormPage = () => {
     setOpen(false);
   };
 
-  const [createSighting, { loading: saving }] = useMutation(CREATE_SIGHTING);
+  const [createSighting, { loading: saving }] = useMutation(CREATE_SIGHTING, {
+    onCompleted: () => {
+      resetForm();
+      toast.success("Observation sparad!");
+    },
+    onError: (error) => {
+      toast.error("Observation kunde inte sparas. Vänligen försök igen.");
+      console.error(error);
+    },
+  });
+
+  const resetForm = () => {
+    setLocation("");
+    setNotes("");
+  };
 
   useEffect(() => {
     navigator.geolocation.getCurrentPosition((pos) => {
@@ -85,11 +99,7 @@ const SightingFormPage = () => {
 
         <div className="flex flex-col gap-1">
           <label className="text-sm font-medium">Datum</label>
-          <Input
-            type="date"
-            value={date}
-            onChange={(e) => setDate(e.target.value)}
-          />
+          <Input type="date" value={date} onChange={(e) => setDate(e.target.value)} />
         </div>
 
         <div className="flex flex-col gap-1">

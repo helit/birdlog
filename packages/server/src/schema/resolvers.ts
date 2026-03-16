@@ -36,6 +36,11 @@ interface UpdateSightingArgs {
 }
 
 export const resolvers = {
+  Sighting: {
+    date: (sighting: { date: Date }) => sighting.date.toISOString(),
+    createdAt: (sighting: { createdAt: Date }) => sighting.createdAt.toISOString(),
+  },
+
   Query: {
     species: () => {
       return prisma.species.findMany({
@@ -70,7 +75,7 @@ export const resolvers = {
       return await prisma.sighting.findMany({
         where: { userId: user.id },
         include: { species: true },
-        orderBy: { date: "desc" },
+        orderBy: [{ date: "desc" }, { id: "desc" }],
       });
     },
   },
