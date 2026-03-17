@@ -33,12 +33,22 @@ export const typeDefs = gql`
     user: User!
   }
 
+  type LifeListEntry {
+    species: Species!
+    sightingCount: Int!
+    firstSeenAt: String!
+    lastSeenAt: String!
+    months: [Int!]!
+  }
+
   type Query {
     species: [Species!]!
     speciesById(id: ID!): Species
     searchSpecies(query: String!): [Species!]!
     me: User
     mySightings: [Sighting!]!
+    mySightingsBySpecies(speciesId: ID!): [Sighting!]!
+    myLifeList: [LifeListEntry!]!
   }
 
   type Mutation {

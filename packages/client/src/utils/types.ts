@@ -17,3 +17,11 @@ export interface Sighting {
   notes?: string | null;
   species: Species;
 }
+
+export interface MyLifeList {
+  species: Species;
+  sightingCount: number;
+  firstSeenAt: string;
+  lastSeenAt: string;
+  months: number[];
+}

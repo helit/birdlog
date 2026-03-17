@@ -1,6 +1,6 @@
 # BIRDLOG — Claude Project Context
 
-Last updated: 2026-03-16
+Last updated: 2026-03-17
 Current phase: Phase 3 — Sighting Log [IN PROGRESS]
 
 ## About
@@ -87,7 +87,16 @@ before proceeding. This reinforces learning and ensures concepts stick.
 - Toast notifications: sonner Toaster in App.tsx (position="bottom-center"), toast() calls in SightingCard
 - NOTE: App.tsx temporarily renders SightingsListPage directly, bypassing the species list. Revert when adding routing in Step 7.
 
-### Step 6: Life list page (unique species seen)
+### Step 6: Life list page (unique species seen) [DONE]
+- Server: `LifeListEntry` type in typeDefs (species, sightingCount, firstSeenAt, lastSeenAt, months)
+- Server: `myLifeList` query — uses prisma.sighting.groupBy for count/_min/_max, separate species fetch, separate sightings fetch for unique months via Set
+- Server: `mySightingsBySpecies(speciesId)` query — returns sightings filtered by userId + speciesId (for future drill-down/heatmap)
+- Client: MY_LIFE_LIST query in queries.ts
+- Client: LifeListPage — useQuery(MY_LIFE_LIST), LoadingScreen component, renders LifeListCard per entry
+- Client: LifeListCard component — species name (swedish + scientific), sighting count, last seen date (date-fns + sv locale), months formatted with date-fns MMM
+- Client: LoadingScreen reusable component (centered Spinner with flexbox)
+- NOTE: App.tsx temporarily renders LifeListPage directly. Revert when adding routing in Step 7.
+
 ### Step 7: Navigation/routing (react-router)
 
 ## Completed Phases
@@ -122,7 +131,7 @@ before proceeding. This reinforces learning and ensures concepts stick.
 ### Client
 - `packages/client/src/main.tsx` — Apollo Client setup + React root (authLink + httpLink)
 - `packages/client/src/App.tsx` — Main app component (auth gating + species list)
-- `packages/client/src/graphql/queries.ts` — GET_ALL_SPECIES, SEARCH_SPECIES, ME_QUERY, MY_SIGHTINGS
+- `packages/client/src/graphql/queries.ts` — GET_ALL_SPECIES, SEARCH_SPECIES, ME_QUERY, MY_SIGHTINGS, MY_LIFE_LIST
 - `packages/client/src/graphql/mutations.ts` — LOGIN_MUTATION, REGISTER_MUTATION, CREATE_SIGHTING, UPDATE_SIGHTING, DELETE_SIGHTING
 - `packages/client/src/context/AuthContext.tsx` — AuthProvider, useAuth hook
 - `packages/client/src/pages/LoginPage.tsx` — Login form (shadcn Card + Input)
@@ -130,6 +139,9 @@ before proceeding. This reinforces learning and ensures concepts stick.
 - `packages/client/src/pages/SightingFormPage.tsx` — Create sighting form (species combobox, date, geolocation, notes)
 - `packages/client/src/pages/SightingsListPage.tsx` — Sightings list (useQuery MY_SIGHTINGS, renders SightingCards)
 - `packages/client/src/components/SightingCard.tsx` — Sighting card (delete with toast, edit button disabled, date-fns formatting)
+- `packages/client/src/components/LifeListCard.tsx` — Life list card (species name, sighting count, last seen, months)
+- `packages/client/src/components/LoadingScreen.tsx` — Centered spinner loading screen (reusable)
+- `packages/client/src/pages/LifeListPage.tsx` — Life list page (useQuery MY_LIFE_LIST, renders LifeListCards)
 - `packages/client/src/components/ui/` — shadcn UI components (button, input, label, card, command, popover, textarea, sonner)
 - `packages/client/src/lib/utils.ts` — cn() utility for Tailwind class merging
 

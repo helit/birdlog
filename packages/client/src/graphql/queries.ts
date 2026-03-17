@@ -58,3 +58,23 @@ export const MY_SIGHTINGS = gql`
     }
   }
 `;
+
+export const MY_LIFE_LIST = gql`
+  query MyLifeList {
+    myLifeList {
+      species {
+        id
+        swedishName
+        scientificName
+        englishName
+        family
+        description
+        imageUrl
+      }
+      sightingCount
+      firstSeenAt
+      lastSeenAt
+      months
+    }
+  }
+`;

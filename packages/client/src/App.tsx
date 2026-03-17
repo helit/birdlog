@@ -9,7 +9,7 @@ import { Input } from "@/components/ui/input.js";
 import { Card, CardContent } from "@/components/ui/card.js";
 import { Species } from "./utils/types.js";
 import { Toaster } from "sonner";
-import SightingsListPage from "./pages/SightingsListPage.js";
+import LifeListPage from "./pages/LifeListPage.js";
 
 function App() {
   const { user, logout } = useAuth();
@@ -48,7 +48,7 @@ function App() {
 
   return (
     <div>
-      <SightingsListPage />
+      <LifeListPage />
       <Toaster position="bottom-center" />
     </div>
   );

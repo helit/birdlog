@@ -78,6 +78,67 @@ export const resolvers = {
         orderBy: [{ date: "desc" }, { id: "desc" }],
       });
     },
+
+    mySightingsBySpecies: async (
+      _: unknown,
+      { speciesId }: { speciesId: string },
+      context: GraphQLContext,
+    ) => {
+      const user = requireAuth(context.user);
+
+      return await prisma.sighting.findMany({
+        where: { userId: user.id, speciesId },
+        include: { species: true },
+        orderBy: [{ date: "desc" }, { id: "desc" }],
+      });
+    },
+
+    myLifeList: async (_: unknown, __: unknown, context: GraphQLContext) => {
+      const user = requireAuth(context.user);
+
+      const grouped = await prisma.sighting.groupBy({
+        where: { userId: user.id },
+        by: ["speciesId"],
+        _count: {
+          speciesId: true,
+        },
+        _min: {
+          date: true,
+        },
+        _max: {
+          date: true,
+        },
+      });
+
+      const speciesIds = grouped.map((g) => g.speciesId);
+      const speciesList = await prisma.species.findMany({
+        where: { id: { in: speciesIds } },
+      });
+
+      const sightingsList = await prisma.sighting.findMany({
+        where: { userId: user.id },
+        select: { speciesId: true, date: true },
+      });
+
+      return grouped.map((g) => {
+        const species = speciesList.find((s) => s.id === g.speciesId);
+        const months = [
+          ...new Set(
+            sightingsList
+              .filter((s) => s.speciesId === g.speciesId)
+              .map((s) => s.date.getMonth() + 1),
+          ),
+        ];
+
+        return {
+          species,
+          sightingCount: g._count.speciesId,
+          firstSeenAt: g._min.date?.toISOString(),
+          lastSeenAt: g._max.date?.toISOString(),
+          months,
+        };
+      });
+    },
   },
 
   Mutation: {
