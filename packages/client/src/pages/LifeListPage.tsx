@@ -9,10 +9,8 @@ const LifeListPage = () => {
 
   if (loading) return <LoadingScreen />;
 
-  console.log({ data });
-
   return (
-    <div className="p-4 flex flex-col gap-4">
+    <div className="flex flex-col gap-4">
       {data?.myLifeList.map((lifeList: MyLifeList) => {
         return <LifeListCard key={lifeList.species.id} lifeList={lifeList} />;
       })}

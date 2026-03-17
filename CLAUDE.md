@@ -10,7 +10,7 @@ Repo: https://github.com/helit/birdlog
 
 ## Tech Stack
 
-- Frontend: React 18, TypeScript, Vite, Apollo Client 3, Tailwind CSS 4, shadcn/ui
+- Frontend: React 18, TypeScript, Vite, Apollo Client 3, React Router 7, Tailwind CSS 4, shadcn/ui
 - Backend: Node.js, Apollo Server 4, GraphQL, Express
 - Database: PostgreSQL + PostGIS via Docker Compose
 - ORM: Prisma
@@ -75,17 +75,15 @@ before proceeding. This reinforces learning and ensures concepts stick.
 - Notes: optional textarea
 - Submit: useMutation with CREATE_SIGHTING, button disabled until required fields filled (speciesId, lat/lng, date)
 - Basic mobile-first styling with Card layout, labels, and gap spacing
-- NOTE: App.tsx temporarily renders SightingFormPage directly (line 55: `return <SightingFormPage />`), bypassing the species list. Revert when adding routing in Step 7.
 
 ### Step 5: Sightings list page (view, edit, delete) [DONE]
 - SightingsListPage: useQuery(MY_SIGHTINGS), loading state with Spinner, renders SightingCard per sighting
 - SightingCard component: displays species name (swedish + scientific), formatted date (date-fns + sv locale), coordinates, optional location/notes
 - Delete: useMutation(DELETE_SIGHTING) with refetchQueries, toast.success/error via sonner, loading spinner on button
-- Edit button: present but disabled — will be wired up in Step 7 with routing (reuse SightingFormPage pre-filled)
+- Edit button: navigates to /edit/:id with sighting data via route state
 - Server: added Sighting field resolvers for date/createdAt → toISOString() so dates come as ISO strings instead of timestamps
 - Server: mySightings orderBy uses compound sort [{ date: "desc" }, { id: "desc" }]
-- Toast notifications: sonner Toaster in App.tsx (position="bottom-center"), toast() calls in SightingCard
-- NOTE: App.tsx temporarily renders SightingsListPage directly, bypassing the species list. Revert when adding routing in Step 7.
+- Toast notifications: sonner Toaster in App.tsx (position="top-center"), toast() calls in SightingCard
 
 ### Step 6: Life list page (unique species seen) [DONE]
 - Server: `LifeListEntry` type in typeDefs (species, sightingCount, firstSeenAt, lastSeenAt, months)
@@ -95,9 +93,18 @@ before proceeding. This reinforces learning and ensures concepts stick.
 - Client: LifeListPage — useQuery(MY_LIFE_LIST), LoadingScreen component, renders LifeListCard per entry
 - Client: LifeListCard component — species name (swedish + scientific), sighting count, last seen date (date-fns + sv locale), months formatted with date-fns MMM
 - Client: LoadingScreen reusable component (centered Spinner with flexbox)
-- NOTE: App.tsx temporarily renders LifeListPage directly. Revert when adding routing in Step 7.
 
-### Step 7: Navigation/routing (react-router)
+### Step 7: Navigation/routing (react-router) [DONE]
+- Installed react-router-dom v7, BrowserRouter wraps app in main.tsx (BrowserRouter → ApolloProvider → AuthProvider → App)
+- App.tsx: conditional routing — unauthenticated users see /login and /register (with catch-all redirect to /login), authenticated users see /, /new, /edit/:id, /life-list (with catch-all redirect to /)
+- Auth pages (LoginPage, RegisterPage): removed callback props (onSwitchToRegister/onSwitchToLogin), replaced with `<Link>` navigation between /login and /register
+- BottomNav component: fixed bottom tab bar with 3 tabs (Observationer, Ny, Fågellista), uses useLocation() + isActive() for active tab highlighting (text-primary vs text-muted-foreground), cn() utility for class merging
+- Header component: top bar with "BirdLog" title and logout button (LogOut icon from lucide-react), useAuth() for logout
+- SightingFormPage: supports both create and edit modes via useParams() (id) and useLocation() state (sighting data), pre-fills form fields in edit mode, skips geolocation fetch in edit mode, calls UPDATE_SIGHTING or CREATE_SIGHTING based on presence of id, useNavigate() redirects to / after success
+- SightingCard: edit button wired up with navigate(`/edit/${id}`, { state: { sighting } }) passing sighting data via route state
+- Layout: authenticated routes wrapped in max-w-md centered container with mb-14 for bottom nav clearance, auth routes centered with flex min-h-screen
+- Toaster (sonner) rendered once in App.tsx outside route blocks, position="top-center"
+- Cleaned up App.tsx: removed old species list code, useState toggles, commented-out returns
 
 ## Completed Phases
 
@@ -129,16 +136,18 @@ before proceeding. This reinforces learning and ensures concepts stick.
 - `packages/server/prisma/schema.prisma` — User, Species, Sighting models
 
 ### Client
-- `packages/client/src/main.tsx` — Apollo Client setup + React root (authLink + httpLink)
-- `packages/client/src/App.tsx` — Main app component (auth gating + species list)
+- `packages/client/src/main.tsx` — Apollo Client setup + React root (BrowserRouter + authLink + httpLink)
+- `packages/client/src/App.tsx` — Main app component (conditional routing: auth vs authenticated routes)
 - `packages/client/src/graphql/queries.ts` — GET_ALL_SPECIES, SEARCH_SPECIES, ME_QUERY, MY_SIGHTINGS, MY_LIFE_LIST
 - `packages/client/src/graphql/mutations.ts` — LOGIN_MUTATION, REGISTER_MUTATION, CREATE_SIGHTING, UPDATE_SIGHTING, DELETE_SIGHTING
 - `packages/client/src/context/AuthContext.tsx` — AuthProvider, useAuth hook
 - `packages/client/src/pages/LoginPage.tsx` — Login form (shadcn Card + Input)
 - `packages/client/src/pages/RegisterPage.tsx` — Register form (shadcn Card + Input)
-- `packages/client/src/pages/SightingFormPage.tsx` — Create sighting form (species combobox, date, geolocation, notes)
+- `packages/client/src/pages/SightingFormPage.tsx` — Create/edit sighting form (species combobox, date, geolocation, notes, useParams for edit mode)
 - `packages/client/src/pages/SightingsListPage.tsx` — Sightings list (useQuery MY_SIGHTINGS, renders SightingCards)
-- `packages/client/src/components/SightingCard.tsx` — Sighting card (delete with toast, edit button disabled, date-fns formatting)
+- `packages/client/src/components/SightingCard.tsx` — Sighting card (delete with toast, edit via navigate with route state, date-fns formatting)
+- `packages/client/src/components/Header.tsx` — Top bar with app title and logout button
+- `packages/client/src/components/BottomNav.tsx` — Bottom tab navigation (Observationer, Ny, Fågellista) with active tab highlighting
 - `packages/client/src/components/LifeListCard.tsx` — Life list card (species name, sighting count, last seen, months)
 - `packages/client/src/components/LoadingScreen.tsx` — Centered spinner loading screen (reusable)
 - `packages/client/src/pages/LifeListPage.tsx` — Life list page (useQuery MY_LIFE_LIST, renders LifeListCards)

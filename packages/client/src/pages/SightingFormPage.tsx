@@ -11,25 +11,35 @@ import {
 import { Input } from "@/components/ui/input";
 import { Popover, PopoverContent, PopoverTrigger } from "@/components/ui/popover";
 import { Textarea } from "@/components/ui/textarea";
-import { CREATE_SIGHTING } from "@/graphql/mutations";
+import { CREATE_SIGHTING, UPDATE_SIGHTING } from "@/graphql/mutations";
 import { SEARCH_SPECIES } from "@/graphql/queries";
 import { useLazyQuery, useMutation } from "@apollo/client";
 import { useEffect, useState } from "react";
+import { useLocation, useNavigate, useParams } from "react-router-dom";
 import { toast } from "sonner";
 
 const SightingFormPage = () => {
-  const [speciesId, setSpeciesId] = useState("");
-  const [latitude, setLatitude] = useState<number | null>(null);
-  const [longitude, setLongitude] = useState<number | null>(null);
-  const [location, setLocation] = useState("");
-  const [notes, setNotes] = useState("");
-  const [date, setDate] = useState(new Date().toISOString().split("T")[0]);
+  const navigate = useNavigate();
+
+  const { id } = useParams();
+  const { state } = useLocation();
+  const sighting = state?.sighting;
+
+  const [speciesId, setSpeciesId] = useState(sighting?.species.id ?? "");
+  const [latitude, setLatitude] = useState<number | null>(sighting?.latitude ?? null);
+  const [longitude, setLongitude] = useState<number | null>(sighting?.longitude ?? null);
+  const [location, setLocation] = useState(sighting?.location ?? "");
+  const [notes, setNotes] = useState(sighting?.notes ?? "");
+  const [date, setDate] = useState(
+    sighting?.date.split("T")[0] ?? new Date().toISOString().split("T")[0],
+  );
+  const [selectedSpeciesName, setSelectedSpeciesName] = useState(
+    sighting?.species.swedishName ?? "",
+  );
 
   const [executeSearch, { data }] = useLazyQuery(SEARCH_SPECIES);
 
   const [open, setOpen] = useState(false);
-
-  const [selectedSpeciesName, setSelectedSpeciesName] = useState("");
 
   const selectSpecies = (species: { id: string; swedishName: string }) => {
     setSpeciesId(species.id);
@@ -39,7 +49,7 @@ const SightingFormPage = () => {
 
   const [createSighting, { loading: saving }] = useMutation(CREATE_SIGHTING, {
     onCompleted: () => {
-      resetForm();
+      navigate("/");
       toast.success("Observation sparad!");
     },
     onError: (error) => {
@@ -48,21 +58,29 @@ const SightingFormPage = () => {
     },
   });
 
-  const resetForm = () => {
-    setLocation("");
-    setNotes("");
-  };
+  const [updateSighting, { loading: updating }] = useMutation(UPDATE_SIGHTING, {
+    onCompleted: () => {
+      navigate("/");
+      toast.success("Observation uppdaterad!");
+    },
+    onError: (error) => {
+      toast.error("Kunde inte uppdatera. Försök igen.");
+      console.error(error);
+    },
+  });
 
   useEffect(() => {
-    navigator.geolocation.getCurrentPosition((pos) => {
-      setLatitude(pos.coords.latitude);
-      setLongitude(pos.coords.longitude);
-    });
+    if (!sighting) {
+      navigator.geolocation.getCurrentPosition((pos) => {
+        setLatitude(pos.coords.latitude);
+        setLongitude(pos.coords.longitude);
+      });
+    }
   }, []);
 
   return (
-    <div className="mx-auto min-h-screen max-w-md p-4">
-      <h1 className="mb-6 text-xl font-bold">Ny observation</h1>
+    <div>
+      <h1 className="mb-6 text-xl font-bold">{id ? "Redigera observation" : "Ny observation"}</h1>
       <Card className="flex flex-col gap-4 p-4">
         <div className="flex flex-col gap-1">
           <label className="text-sm font-medium">Art</label>
@@ -142,20 +160,34 @@ const SightingFormPage = () => {
         <Button
           className="mt-2 w-full"
           onClick={() => {
-            createSighting({
-              variables: {
-                speciesId,
-                latitude,
-                longitude,
-                date,
-                location: location || undefined,
-                notes: notes || undefined,
-              },
-            });
+            if (id) {
+              updateSighting({
+                variables: {
+                  updateSightingId: id,
+                  speciesId,
+                  latitude,
+                  longitude,
+                  date,
+                  location: location || undefined,
+                  notes: notes || undefined,
+                },
+              });
+            } else {
+              createSighting({
+                variables: {
+                  speciesId,
+                  latitude,
+                  longitude,
+                  date,
+                  location: location || undefined,
+                  notes: notes || undefined,
+                },
+              });
+            }
           }}
           disabled={saving || !speciesId || !latitude || !longitude || !date}
         >
-          {saving ? "Sparar..." : "Spara observation"}
+          {saving || updating ? "Sparar..." : id ? "Uppdatera observation" : "Spara observation"}
         </Button>
       </Card>
     </div>

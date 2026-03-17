@@ -5,24 +5,14 @@ import { useAuth } from "../context/AuthContext.js";
 import { Button } from "@/components/ui/button.js";
 import { Input } from "@/components/ui/input.js";
 import { Label } from "@/components/ui/label.js";
-import {
-  Card,
-  CardContent,
-  CardDescription,
-  CardHeader,
-  CardTitle,
-} from "@/components/ui/card.js";
+import { Card, CardContent, CardDescription, CardHeader, CardTitle } from "@/components/ui/card.js";
+import { Link } from "react-router-dom";
 
-const RegisterPage = ({
-  onSwitchToLogin,
-}: {
-  onSwitchToLogin: () => void;
-}) => {
+const RegisterPage = () => {
   const [name, setName] = useState("");
   const [email, setEmail] = useState("");
   const [password, setPassword] = useState("");
-  const [registerMutation, { loading, error }] =
-    useMutation(REGISTER_MUTATION);
+  const [registerMutation, { loading, error }] = useMutation(REGISTER_MUTATION);
 
   const { login } = useAuth();
 
@@ -43,68 +33,55 @@ const RegisterPage = ({
   };
 
   return (
-    <div className="flex min-h-screen items-center justify-center p-4">
-      <Card className="w-full max-w-sm">
-        <CardHeader>
-          <CardTitle className="text-2xl">Ny användare</CardTitle>
-          <CardDescription>
-            Skapa ett konto för att börja logga fåglar
-          </CardDescription>
-        </CardHeader>
-        <CardContent>
-          <form onSubmit={handleSubmit} className="flex flex-col gap-4">
-            <div className="flex flex-col gap-2">
-              <Label htmlFor="name">Namn</Label>
-              <Input
-                id="name"
-                type="text"
-                placeholder="Ditt namn"
-                value={name}
-                onChange={(e) => setName(e.target.value)}
-                required
-              />
-            </div>
-            <div className="flex flex-col gap-2">
-              <Label htmlFor="email">E-post</Label>
-              <Input
-                id="email"
-                type="email"
-                placeholder="namn@exempel.se"
-                value={email}
-                onChange={(e) => setEmail(e.target.value)}
-                required
-              />
-            </div>
-            <div className="flex flex-col gap-2">
-              <Label htmlFor="password">Lösenord</Label>
-              <Input
-                id="password"
-                type="password"
-                value={password}
-                onChange={(e) => setPassword(e.target.value)}
-                required
-              />
-            </div>
-            {error && (
-              <p className="text-sm text-destructive">{error.message}</p>
-            )}
-            <Button type="submit" disabled={loading} className="w-full">
-              {loading ? "Registrerar..." : "Registrera"}
-            </Button>
-            <p className="text-center text-sm text-muted-foreground">
-              Har du redan ett konto?{" "}
-              <button
-                type="button"
-                onClick={onSwitchToLogin}
-                className="underline underline-offset-4 hover:text-primary"
-              >
-                Logga in
-              </button>
-            </p>
-          </form>
-        </CardContent>
-      </Card>
-    </div>
+    <Card className="w-full max-w-sm">
+      <CardHeader>
+        <CardTitle className="text-2xl">Ny användare</CardTitle>
+        <CardDescription>Skapa ett konto för att börja logga fåglar</CardDescription>
+      </CardHeader>
+      <CardContent>
+        <form onSubmit={handleSubmit} className="flex flex-col gap-4">
+          <div className="flex flex-col gap-2">
+            <Label htmlFor="name">Namn</Label>
+            <Input
+              id="name"
+              type="text"
+              placeholder="Ditt namn"
+              value={name}
+              onChange={(e) => setName(e.target.value)}
+              required
+            />
+          </div>
+          <div className="flex flex-col gap-2">
+            <Label htmlFor="email">E-post</Label>
+            <Input
+              id="email"
+              type="email"
+              placeholder="namn@exempel.se"
+              value={email}
+              onChange={(e) => setEmail(e.target.value)}
+              required
+            />
+          </div>
+          <div className="flex flex-col gap-2">
+            <Label htmlFor="password">Lösenord</Label>
+            <Input
+              id="password"
+              type="password"
+              value={password}
+              onChange={(e) => setPassword(e.target.value)}
+              required
+            />
+          </div>
+          {error && <p className="text-sm text-destructive">{error.message}</p>}
+          <Button type="submit" disabled={loading} className="w-full">
+            {loading ? "Registrerar..." : "Registrera"}
+          </Button>
+          <p className="text-center text-sm text-muted-foreground">
+            Har du redan ett konto? <Link to="/login">Logga in</Link>
+          </p>
+        </form>
+      </CardContent>
+    </Card>
   );
 };
 

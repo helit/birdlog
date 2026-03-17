@@ -9,12 +9,15 @@ import { toast } from "sonner";
 import { Spinner } from "./ui/spinner";
 import { format } from "date-fns";
 import { sv } from "date-fns/locale";
+import { useNavigate } from "react-router-dom";
 
 interface SightingCardArgs {
   sighting: Sighting;
 }
 
 const SightingCard = ({ sighting }: SightingCardArgs) => {
+  const navigate = useNavigate();
+
   const [deleteSighting, { loading: deleting }] = useMutation(DELETE_SIGHTING, {
     refetchQueries: [MY_SIGHTINGS],
     onCompleted: () => {
@@ -39,9 +42,14 @@ const SightingCard = ({ sighting }: SightingCardArgs) => {
         <div>{sighting.notes ? `Notes: ${sighting.notes}` : ""}</div>
       </CardContent>
       <CardAction className="px-4 flex gap-2">
-        <Button variant="outline" size="icon" disabled>
+        <Button
+          variant="outline"
+          size="icon"
+          onClick={() => navigate(`/edit/${sighting.id}`, { state: { sighting } })}
+        >
           <PencilIcon />
         </Button>
+
         <Button
           variant="destructive"
           size="icon"
