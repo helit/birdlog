@@ -1,7 +1,7 @@
 # BIRDLOG — Claude Project Context
 
 Last updated: 2026-03-17
-Current phase: Phase 3 — Sighting Log [IN PROGRESS]
+Current phase: Phase 4 — PWA & offline basics [NOT STARTED]
 
 ## About
 
@@ -32,7 +32,7 @@ npm run dev              # runs both client + server from root
 
 1. Scaffolding & database                    [DONE]
 2. Authentication                            [DONE]
-3. Sighting log — CRUD, geolocation, life list [IN PROGRESS]
+3. Sighting log — CRUD, geolocation, life list [DONE]
 4. PWA & offline basics
 5. Artdatabanken API integration
 6. AI bird identification (Claude API) — NOTE: User wants to discuss UX/design for this before implementation
