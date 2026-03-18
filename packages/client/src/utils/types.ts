@@ -8,14 +8,24 @@ export interface Species {
 }
 
 export interface Sighting {
-  createdAt: string;
-  date: string;
   id: string;
   latitude: number;
   longitude: number;
   location?: string | null;
   notes?: string | null;
+  date: string;
   species: Species;
+  createdAt: string;
+}
+
+export interface SightingBySpecies {
+  id: string;
+  latitude: number;
+  longitude: number;
+  location?: string | null;
+  notes?: string | null;
+  date: string;
+  createdAt: string;
 }
 
 export interface MyLifeList {

@@ -9,6 +9,7 @@ import { ArrowLeftIcon, MapPinIcon, PencilIcon, TrashIcon } from "lucide-react";
 import { useLocation, useNavigate } from "react-router-dom";
 import { toast } from "sonner";
 import { Spinner } from "@/components/ui/spinner";
+import SightingMap from "@/components/SightingMap";
 
 const SightingDetailPage = () => {
   const { state } = useLocation();
@@ -79,10 +80,15 @@ const SightingDetailPage = () => {
         )}
       </div>
 
-      {/* TODO: Map component will go here */}
-      <div className="flex h-48 items-center justify-center rounded-lg bg-muted shadow-sm text-sm text-muted-foreground">
-        Karta kommer här
-      </div>
+      <SightingMap
+        markers={[
+          {
+            lat: sighting.latitude,
+            lng: sighting.longitude,
+            label: sighting.location || sighting.species.swedishName,
+          },
+        ]}
+      />
 
       <div className="flex gap-2">
         <Button

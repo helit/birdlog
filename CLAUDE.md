@@ -158,7 +158,7 @@ before proceeding. This reinforces learning and ensures concepts stick.
 ### Client
 - `packages/client/src/main.tsx` — Apollo Client setup + React root (BrowserRouter + authLink + httpLink)
 - `packages/client/src/App.tsx` — Main app component (conditional routing: auth vs authenticated routes)
-- `packages/client/src/graphql/queries.ts` — GET_ALL_SPECIES, SEARCH_SPECIES, ME_QUERY, MY_SIGHTINGS, MY_LIFE_LIST
+- `packages/client/src/graphql/queries.ts` — GET_ALL_SPECIES, SEARCH_SPECIES, ME_QUERY, MY_SIGHTINGS, MY_SIGHTINGS_BY_SPECIES, MY_LIFE_LIST
 - `packages/client/src/graphql/mutations.ts` — LOGIN_MUTATION, REGISTER_MUTATION, CREATE_SIGHTING, UPDATE_SIGHTING, DELETE_SIGHTING
 - `packages/client/src/context/AuthContext.tsx` — AuthProvider, useAuth hook
 - `packages/client/src/pages/LoginPage.tsx` — Login form (shadcn Card + Input)
@@ -171,6 +171,7 @@ before proceeding. This reinforces learning and ensures concepts stick.
 - `packages/client/src/components/Header.tsx` — Sticky top bar with app title and logout button
 - `packages/client/src/components/BottomNav.tsx` — Fixed bottom tab navigation (Observationer, Ny, Fågellista)
 - `packages/client/src/components/LifeListCard.tsx` — Compact clickable life list row (navigates to /life-list/:speciesId)
+- `packages/client/src/components/SightingMap.tsx` — Reusable Leaflet map component (accepts markers array, used on both detail pages)
 - `packages/client/src/components/EmptyState.tsx` — Centered empty state with BirdIcon and message (reusable)
 - `packages/client/src/components/LoadingScreen.tsx` — Centered spinner loading screen (reusable)
 - `packages/client/src/pages/LifeListPage.tsx` — Life list page (useQuery MY_LIFE_LIST, renders LifeListCards)
@@ -196,7 +197,7 @@ before proceeding. This reinforces learning and ensures concepts stick.
 - Card component updated (ring-1 → shadow-sm)
 - Compact list cards: SightingCard and LifeListCard are now slim clickable button rows
 - Sightings grouped by month/year headers in SightingsListPage
-- Detail pages: SightingDetailPage (/sighting/:id) and LifeListDetailPage (/life-list/:speciesId) with info cards, map placeholders, edit/delete
+- Detail pages: SightingDetailPage (/sighting/:id) and LifeListDetailPage (/life-list/:speciesId) with info cards, edit/delete
 - Layout: Header sticky full-width outside container, BottomNav fixed full-width, both white bg with subtle shadows
 - Container widened to max-w-2xl with w-full for responsiveness
 - Empty state component (EmptyState.tsx): centered BirdIcon + message when no sightings/life list entries
@@ -205,9 +206,12 @@ before proceeding. This reinforces learning and ensures concepts stick.
 - Bug fix: SightingFormPage form reset — added key="new"/key="edit" on routes so React remounts between create and edit
 - Bug fix: stale list after mutations — all mutations (create, update, delete) now use `{ query: ... }` refetchQueries syntax + awaitRefetchQueries + async/await for navigation after refetch completes
 
+- Leaflet maps: SightingMap reusable component (react-leaflet v4, OpenStreetMap tiles, custom icon fix for Vite)
+- SightingDetailPage: single-marker map showing sighting location
+- LifeListDetailPage: multi-marker map showing all sighting locations for species
+- LifeListDetailPage: fetches and displays individual sightings per species (MY_SIGHTINGS_BY_SPECIES query, date/location/notes per sighting)
+
 ### TODO
-- Add map component (Leaflet) to detail pages — lat/lng data already available
-- LifeListDetailPage: fetch and display individual sightings for that species (mySightingsBySpecies query exists on server)
 - Landing/splash screen concept
 - Further styling polish as needed
 

@@ -1,9 +1,13 @@
-import { MyLifeList } from "@/utils/types";
+import { MyLifeList, SightingBySpecies } from "@/utils/types";
 import { format } from "date-fns";
 import { sv } from "date-fns/locale";
-import { ArrowLeftIcon } from "lucide-react";
+import { ArrowLeftIcon, MapPinIcon } from "lucide-react";
 import { useLocation, useNavigate } from "react-router-dom";
 import { Button } from "@/components/ui/button";
+import { useQuery } from "@apollo/client";
+import { MY_SIGHTINGS_BY_SPECIES } from "@/graphql/queries";
+import { Spinner } from "@/components/ui/spinner";
+import SightingMap from "@/components/SightingMap";
 
 const LifeListDetailPage = () => {
   const { state } = useLocation();
@@ -16,6 +20,11 @@ const LifeListDetailPage = () => {
       .map((m) => format(new Date(2000, m - 1), "MMMM", { locale: sv }))
       .join(", ");
   };
+
+  const { data, loading } = useQuery(MY_SIGHTINGS_BY_SPECIES, {
+    variables: { speciesId: lifeList?.species.id },
+    skip: !lifeList,
+  });
 
   if (!lifeList) {
     return (
@@ -69,12 +78,39 @@ const LifeListDetailPage = () => {
         </div>
       </div>
 
-      {/* TODO: Map with all sighting pins for this species */}
-      <div className="flex h-48 items-center justify-center rounded-lg bg-muted shadow-sm text-sm text-muted-foreground">
-        Karta kommer här
-      </div>
+      {data?.mySightingsBySpecies.length > 0 && (
+        <SightingMap
+          markers={data.mySightingsBySpecies.map((s: SightingBySpecies) => ({
+            lat: s.latitude,
+            lng: s.longitude,
+            label: s.location || format(s.date, "d MMMM yyyy", { locale: sv }),
+          }))}
+        />
+      )}
 
-      {/* TODO: List of individual sightings using mySightingsBySpecies query */}
+      {loading ? (
+        <Spinner />
+      ) : data?.mySightingsBySpecies.length > 0 ? (
+        <div className="flex flex-col gap-2">
+          <h2 className="text-sm font-semibold text-muted-foreground">Observationer</h2>
+          {data.mySightingsBySpecies.map((sighting: SightingBySpecies) => (
+            <div key={sighting.id} className="flex flex-col gap-1 rounded-lg bg-card p-3 shadow-sm">
+              <div className="flex items-center justify-between">
+                <span className="text-sm font-medium">
+                  {format(sighting.date, "d MMMM yyyy", { locale: sv })}
+                </span>
+                {sighting.location && (
+                  <span className="flex items-center gap-1 text-sm text-muted-foreground">
+                    <MapPinIcon className="size-3" />
+                    {sighting.location}
+                  </span>
+                )}
+              </div>
+              {sighting.notes && <p className="text-sm text-muted-foreground">{sighting.notes}</p>}
+            </div>
+          ))}
+        </div>
+      ) : null}
     </div>
   );
 };

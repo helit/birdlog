@@ -59,6 +59,20 @@ export const MY_SIGHTINGS = gql`
   }
 `;
 
+export const MY_SIGHTINGS_BY_SPECIES = gql`
+  query MySightingsBySpecies($speciesId: ID!) {
+    mySightingsBySpecies(speciesId: $speciesId) {
+      id
+      latitude
+      longitude
+      location
+      notes
+      date
+      createdAt
+    }
+  }
+`;
+
 export const MY_LIFE_LIST = gql`
   query MyLifeList {
     myLifeList {
