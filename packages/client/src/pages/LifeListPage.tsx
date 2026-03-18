@@ -1,3 +1,4 @@
+import EmptyState from "@/components/EmptyState";
 import LifeListCard from "@/components/LifeListCard";
 import LoadingScreen from "@/components/LoadingScreen";
 import { MY_LIFE_LIST } from "@/graphql/queries";
@@ -9,10 +10,14 @@ const LifeListPage = () => {
 
   if (loading) return <LoadingScreen />;
 
+  const lifeList = data?.myLifeList ?? [];
+
+  if (lifeList.length === 0) return <EmptyState />;
+
   return (
-    <div className="flex flex-col gap-4">
-      {data?.myLifeList.map((lifeList: MyLifeList) => {
-        return <LifeListCard key={lifeList.species.id} lifeList={lifeList} />;
+    <div className="flex flex-col gap-2">
+      {lifeList.map((entry: MyLifeList) => {
+        return <LifeListCard key={entry.species.id} lifeList={entry} />;
       })}
     </div>
   );

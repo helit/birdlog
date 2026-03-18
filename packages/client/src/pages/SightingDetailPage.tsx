@@ -1,31 +1,23 @@
 import { Button } from "@/components/ui/button";
 import { DELETE_SIGHTING } from "@/graphql/mutations";
-import { MY_SIGHTINGS } from "@/graphql/queries";
+import { MY_SIGHTINGS, MY_LIFE_LIST } from "@/graphql/queries";
 import { Sighting } from "@/utils/types";
 import { useMutation } from "@apollo/client";
 import { format } from "date-fns";
 import { sv } from "date-fns/locale";
 import { ArrowLeftIcon, MapPinIcon, PencilIcon, TrashIcon } from "lucide-react";
-import { useLocation, useNavigate, useParams } from "react-router-dom";
+import { useLocation, useNavigate } from "react-router-dom";
 import { toast } from "sonner";
 import { Spinner } from "@/components/ui/spinner";
 
 const SightingDetailPage = () => {
-  const { id } = useParams();
   const { state } = useLocation();
   const navigate = useNavigate();
   const sighting: Sighting | undefined = state?.sighting;
 
   const [deleteSighting, { loading: deleting }] = useMutation(DELETE_SIGHTING, {
-    refetchQueries: [MY_SIGHTINGS],
-    onCompleted: () => {
-      navigate("/");
-      toast.success("Observation raderad");
-    },
-    onError: (error) => {
-      toast.error("Observation kunde inte raderas. Vänligen försök igen.");
-      console.error(error);
-    },
+    refetchQueries: [{ query: MY_SIGHTINGS }, { query: MY_LIFE_LIST }],
+    awaitRefetchQueries: true,
   });
 
   if (!sighting) {
@@ -57,7 +49,9 @@ const SightingDetailPage = () => {
       <div className="flex flex-col gap-3 rounded-lg bg-card p-4 shadow-sm">
         <div className="flex items-center justify-between">
           <span className="text-sm text-muted-foreground">Datum</span>
-          <span className="text-sm font-medium">{format(sighting.date, "d MMMM yyyy", { locale: sv })}</span>
+          <span className="text-sm font-medium">
+            {format(sighting.date, "d MMMM yyyy", { locale: sv })}
+          </span>
         </div>
 
         <div className="flex items-center justify-between">
@@ -102,7 +96,16 @@ const SightingDetailPage = () => {
         <Button
           variant="destructive"
           className="flex-1"
-          onClick={() => deleteSighting({ variables: { deleteSightingId: sighting.id } })}
+          onClick={async () => {
+            try {
+              await deleteSighting({ variables: { deleteSightingId: sighting.id } });
+              toast.success("Observation raderad");
+              navigate("/");
+            } catch (error) {
+              toast.error("Observation kunde inte raderas. Vänligen försök igen.");
+              console.error(error);
+            }
+          }}
           disabled={deleting}
         >
           {deleting ? <Spinner /> : <TrashIcon className="size-4" />}

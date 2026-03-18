@@ -14,32 +14,35 @@ const BottomNav = () => {
         <Link
           to="/"
           className={cn(
-            "flex flex-col items-center p-2",
-            isActive("/") ? "text-primary" : "text-muted-foreground",
+            "relative flex flex-1 flex-col items-center p-2",
+            isActive("/") ? "bg-primary/10 text-primary" : "text-muted-foreground",
           )}
         >
           <BinocularsIcon />
           <span className="text-xs">Observationer</span>
+          {isActive("/") && <span className="absolute bottom-0 h-0.5 w-full bg-primary" />}
         </Link>
         <Link
           to="/new"
           className={cn(
-            "flex flex-col items-center p-2",
-            isActive("/new") ? "text-primary" : "text-muted-foreground",
+            "relative flex flex-1 flex-col items-center p-2",
+            isActive("/new") ? "bg-primary/10 text-primary" : "text-muted-foreground",
           )}
         >
           <PlusIcon />
           <span className="text-xs">Ny</span>
+          {isActive("/new") && <span className="absolute bottom-0 h-0.5 w-full bg-primary" />}
         </Link>
         <Link
           to="/life-list"
           className={cn(
-            "flex flex-col items-center p-2",
-            isActive("/life-list") ? "text-primary" : "text-muted-foreground",
+            "relative flex flex-1 flex-col items-center p-2",
+            isActive("/life-list") ? "bg-primary/10 text-primary" : "text-muted-foreground",
           )}
         >
           <BirdIcon />
           <span className="text-xs">Fågellista</span>
+          {isActive("/life-list") && <span className="absolute bottom-0 h-0.5 w-full bg-primary" />}
         </Link>
       </div>
     </nav>

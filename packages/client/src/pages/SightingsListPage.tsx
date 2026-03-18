@@ -1,3 +1,4 @@
+import EmptyState from "@/components/EmptyState";
 import LoadingScreen from "@/components/LoadingScreen";
 import SightingCard from "@/components/SightingCard";
 import { MY_SIGHTINGS } from "@/graphql/queries";
@@ -28,7 +29,11 @@ const SightingsListPage = () => {
 
   if (loading) return <LoadingScreen />;
 
-  const groups = groupByMonth(data?.mySightings ?? []);
+  const sightings = data?.mySightings ?? [];
+
+  if (sightings.length === 0) return <EmptyState />;
+
+  const groups = groupByMonth(sightings);
 
   return (
     <div className="flex flex-col gap-6">

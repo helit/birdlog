@@ -27,12 +27,12 @@ function App() {
       ) : (
         <>
           <Header />
-          <div className="mx-auto min-h-screen w-full max-w-2xl px-4 pb-4 mb-14">
+          <div className="mx-auto w-full max-w-2xl px-4 pb-20">
             <Routes>
               <Route path="/" element={<SightingsListPage />} />
               <Route path="/sighting/:id" element={<SightingDetailPage />} />
-              <Route path="/new" element={<SightingFormPage />} />
-              <Route path="/edit/:id" element={<SightingFormPage />} />
+              <Route path="/new" element={<SightingFormPage key="new" />} />
+              <Route path="/edit/:id" element={<SightingFormPage key="edit" />} />
               <Route path="/life-list" element={<LifeListPage />} />
               <Route path="/life-list/:speciesId" element={<LifeListDetailPage />} />
               <Route path="*" element={<Navigate to="/" replace />} />

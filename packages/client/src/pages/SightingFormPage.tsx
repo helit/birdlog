@@ -12,7 +12,7 @@ import { Input } from "@/components/ui/input";
 import { Popover, PopoverContent, PopoverTrigger } from "@/components/ui/popover";
 import { Textarea } from "@/components/ui/textarea";
 import { CREATE_SIGHTING, UPDATE_SIGHTING } from "@/graphql/mutations";
-import { SEARCH_SPECIES } from "@/graphql/queries";
+import { MY_SIGHTINGS, SEARCH_SPECIES, MY_LIFE_LIST } from "@/graphql/queries";
 import { useLazyQuery, useMutation } from "@apollo/client";
 import { useEffect, useState } from "react";
 import { useLocation, useNavigate, useParams } from "react-router-dom";
@@ -48,25 +48,13 @@ const SightingFormPage = () => {
   };
 
   const [createSighting, { loading: saving }] = useMutation(CREATE_SIGHTING, {
-    onCompleted: () => {
-      navigate("/");
-      toast.success("Observation sparad!");
-    },
-    onError: (error) => {
-      toast.error("Observation kunde inte sparas. Vänligen försök igen.");
-      console.error(error);
-    },
+    refetchQueries: [{ query: MY_SIGHTINGS }, { query: MY_LIFE_LIST }],
+    awaitRefetchQueries: true,
   });
 
   const [updateSighting, { loading: updating }] = useMutation(UPDATE_SIGHTING, {
-    onCompleted: () => {
-      navigate("/");
-      toast.success("Observation uppdaterad!");
-    },
-    onError: (error) => {
-      toast.error("Kunde inte uppdatera. Försök igen.");
-      console.error(error);
-    },
+    refetchQueries: [{ query: MY_SIGHTINGS }, { query: MY_LIFE_LIST }],
+    awaitRefetchQueries: true,
   });
 
   useEffect(() => {
@@ -159,30 +147,38 @@ const SightingFormPage = () => {
 
         <Button
           className="mt-2 w-full"
-          onClick={() => {
-            if (id) {
-              updateSighting({
-                variables: {
-                  updateSightingId: id,
-                  speciesId,
-                  latitude,
-                  longitude,
-                  date,
-                  location: location || undefined,
-                  notes: notes || undefined,
-                },
-              });
-            } else {
-              createSighting({
-                variables: {
-                  speciesId,
-                  latitude,
-                  longitude,
-                  date,
-                  location: location || undefined,
-                  notes: notes || undefined,
-                },
-              });
+          onClick={async () => {
+            try {
+              if (id) {
+                await updateSighting({
+                  variables: {
+                    updateSightingId: id,
+                    speciesId,
+                    latitude,
+                    longitude,
+                    date,
+                    location: location || undefined,
+                    notes: notes || undefined,
+                  },
+                });
+                toast.success("Observation uppdaterad!");
+              } else {
+                await createSighting({
+                  variables: {
+                    speciesId,
+                    latitude,
+                    longitude,
+                    date,
+                    location: location || undefined,
+                    notes: notes || undefined,
+                  },
+                });
+                toast.success("Observation sparad!");
+              }
+              navigate("/");
+            } catch (error) {
+              toast.error(id ? "Kunde inte uppdatera. Försök igen." : "Observation kunde inte sparas. Vänligen försök igen.");
+              console.error(error);
             }
           }}
           disabled={saving || !speciesId || !latitude || !longitude || !date}

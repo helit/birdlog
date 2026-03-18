@@ -171,6 +171,7 @@ before proceeding. This reinforces learning and ensures concepts stick.
 - `packages/client/src/components/Header.tsx` — Sticky top bar with app title and logout button
 - `packages/client/src/components/BottomNav.tsx` — Fixed bottom tab navigation (Observationer, Ny, Fågellista)
 - `packages/client/src/components/LifeListCard.tsx` — Compact clickable life list row (navigates to /life-list/:speciesId)
+- `packages/client/src/components/EmptyState.tsx` — Centered empty state with BirdIcon and message (reusable)
 - `packages/client/src/components/LoadingScreen.tsx` — Centered spinner loading screen (reusable)
 - `packages/client/src/pages/LifeListPage.tsx` — Life list page (useQuery MY_LIFE_LIST, renders LifeListCards)
 - `packages/client/src/components/ui/` — shadcn UI components (button, input, label, card, command, popover, textarea, sonner)
@@ -198,6 +199,11 @@ before proceeding. This reinforces learning and ensures concepts stick.
 - Detail pages: SightingDetailPage (/sighting/:id) and LifeListDetailPage (/life-list/:speciesId) with info cards, map placeholders, edit/delete
 - Layout: Header sticky full-width outside container, BottomNav fixed full-width, both white bg with subtle shadows
 - Container widened to max-w-2xl with w-full for responsiveness
+- Empty state component (EmptyState.tsx): centered BirdIcon + message when no sightings/life list entries
+- Layout fix: removed min-h-screen from content div, using pb-20 for BottomNav clearance (no scroll on empty pages)
+- BottomNav: active tab has primary color indicator bar (full width), subtle bg-primary/10 background, equal-width tabs via flex-1
+- Bug fix: SightingFormPage form reset — added key="new"/key="edit" on routes so React remounts between create and edit
+- Bug fix: stale list after mutations — all mutations (create, update, delete) now use `{ query: ... }` refetchQueries syntax + awaitRefetchQueries + async/await for navigation after refetch completes
 
 ### TODO
 - Add map component (Leaflet) to detail pages — lat/lng data already available
