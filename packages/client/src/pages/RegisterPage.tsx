@@ -77,7 +77,7 @@ const RegisterPage = () => {
             {loading ? "Registrerar..." : "Registrera"}
           </Button>
           <p className="text-center text-sm text-muted-foreground">
-            Har du redan ett konto? <Link to="/login">Logga in</Link>
+            Har du redan ett konto? <Link to="/login" className="text-primary hover:underline">Logga in</Link>
           </p>
         </form>
       </CardContent>

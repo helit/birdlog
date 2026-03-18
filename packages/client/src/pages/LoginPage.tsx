@@ -65,7 +65,7 @@ const LoginPage = () => {
             {loading ? "Loggar in..." : "Logga in"}
           </Button>
           <p className="text-center text-sm text-muted-foreground">
-            Har du inget konto? <Link to="/register">Skapa konto</Link>
+            Har du inget konto? <Link to="/register" className="text-primary hover:underline">Skapa konto</Link>
           </p>
         </form>
       </CardContent>

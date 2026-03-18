@@ -1,67 +1,35 @@
 import { Sighting } from "@/utils/types";
-import { Card, CardAction, CardContent, CardHeader } from "./ui/card";
-import { Button } from "./ui/button";
-import { PencilIcon, TrashIcon } from "lucide-react";
-import { DELETE_SIGHTING } from "@/graphql/mutations";
-import { useMutation } from "@apollo/client";
-import { MY_SIGHTINGS } from "@/graphql/queries";
-import { toast } from "sonner";
-import { Spinner } from "./ui/spinner";
 import { format } from "date-fns";
 import { sv } from "date-fns/locale";
+import { MapPinIcon } from "lucide-react";
 import { useNavigate } from "react-router-dom";
 
-interface SightingCardArgs {
+interface SightingCardProps {
   sighting: Sighting;
 }
 
-const SightingCard = ({ sighting }: SightingCardArgs) => {
+const SightingCard = ({ sighting }: SightingCardProps) => {
   const navigate = useNavigate();
 
-  const [deleteSighting, { loading: deleting }] = useMutation(DELETE_SIGHTING, {
-    refetchQueries: [MY_SIGHTINGS],
-    onCompleted: () => {
-      toast.success("Observation raderad");
-    },
-    onError: (error) => {
-      toast.error("Observation kunde inte raderas. Vänligen försök igen.");
-      console.error(error);
-    },
-  });
-
   return (
-    <Card>
-      <CardHeader>
-        <h2 className="text-lg font-semibold">{sighting.species.swedishName}</h2>
-        <p className="text-sm text-muted-foreground">{sighting.species.scientificName}</p>
-      </CardHeader>
-      <CardContent>
-        <div>{format(sighting.date, "d MMMM yyyy", { locale: sv })}</div>
-        <div>{`Coordinates: ${sighting.latitude}, ${sighting.longitude}`}</div>
-        <div>{sighting.location ? `Location: ${sighting.location}` : ""}</div>
-        <div>{sighting.notes ? `Notes: ${sighting.notes}` : ""}</div>
-      </CardContent>
-      <CardAction className="px-4 flex gap-2">
-        <Button
-          variant="outline"
-          size="icon"
-          onClick={() => navigate(`/edit/${sighting.id}`, { state: { sighting } })}
-        >
-          <PencilIcon />
-        </Button>
-
-        <Button
-          variant="destructive"
-          size="icon"
-          onClick={() => {
-            deleteSighting({ variables: { deleteSightingId: sighting.id } });
-          }}
-          disabled={deleting}
-        >
-          {deleting ? <Spinner /> : <TrashIcon />}
-        </Button>
-      </CardAction>
-    </Card>
+    <button
+      className="flex w-full items-center gap-3 rounded-lg bg-card p-3 text-left shadow-sm transition-colors hover:bg-accent"
+      onClick={() => navigate(`/sighting/${sighting.id}`, { state: { sighting } })}
+    >
+      <div className="min-w-0 flex-1">
+        <div className="font-medium">{sighting.species.swedishName}</div>
+        <div className="text-xs text-muted-foreground italic">{sighting.species.scientificName}</div>
+        <div className="mt-1 flex items-center gap-2 text-xs text-muted-foreground">
+          <span>{format(sighting.date, "d MMM", { locale: sv })}</span>
+          {sighting.location && (
+            <>
+              <MapPinIcon className="size-3" />
+              <span className="truncate">{sighting.location}</span>
+            </>
+          )}
+        </div>
+      </div>
+    </button>
   );
 };
 

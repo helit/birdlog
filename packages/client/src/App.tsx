@@ -5,6 +5,8 @@ import LifeListPage from "./pages/LifeListPage.js";
 import { Navigate, Route, Routes } from "react-router-dom";
 import SightingsListPage from "./pages/SightingsListPage.js";
 import SightingFormPage from "./pages/SightingFormPage.js";
+import SightingDetailPage from "./pages/SightingDetailPage.js";
+import LifeListDetailPage from "./pages/LifeListDetailPage.js";
 import { Toaster } from "./components/ui/sonner.js";
 import BottomNav from "./components/BottomNav.js";
 import Header from "./components/Header.js";
@@ -24,13 +26,15 @@ function App() {
         </div>
       ) : (
         <>
-          <div className="mx-auto min-h-screen max-w-md p-4 mb-14">
-            <Header />
+          <Header />
+          <div className="mx-auto min-h-screen w-full max-w-2xl px-4 pb-4 mb-14">
             <Routes>
               <Route path="/" element={<SightingsListPage />} />
+              <Route path="/sighting/:id" element={<SightingDetailPage />} />
               <Route path="/new" element={<SightingFormPage />} />
               <Route path="/edit/:id" element={<SightingFormPage />} />
               <Route path="/life-list" element={<LifeListPage />} />
+              <Route path="/life-list/:speciesId" element={<LifeListDetailPage />} />
               <Route path="*" element={<Navigate to="/" replace />} />
             </Routes>
             <BottomNav />

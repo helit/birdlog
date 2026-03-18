@@ -1,33 +1,26 @@
 import { MyLifeList } from "@/utils/types";
-import { Card, CardAction, CardContent, CardHeader } from "./ui/card";
-import { format } from "date-fns";
-import { sv } from "date-fns/locale";
+import { useNavigate } from "react-router-dom";
 
-interface LifeListCardArgs {
+interface LifeListCardProps {
   lifeList: MyLifeList;
 }
 
-const LifeListCard = ({ lifeList }: LifeListCardArgs) => {
-  const getMonths = (months: number[]) => {
-    return months
-      .sort((a, b) => a - b)
-      .map((m) => format(new Date(2000, m - 1), "MMM", { locale: sv }))
-      .join(", ");
-  };
+const LifeListCard = ({ lifeList }: LifeListCardProps) => {
+  const navigate = useNavigate();
 
   return (
-    <Card>
-      <CardHeader>
-        <h2 className="text-lg font-semibold">{lifeList.species.swedishName}</h2>
-        <p className="text-sm text-muted-foreground">{lifeList.species.scientificName}</p>
-      </CardHeader>
-      <CardContent>
-        <div>{`Senast observerad ${format(lifeList.lastSeenAt, "d MMMM yyyy", { locale: sv })}`}</div>
-        <div>{`Antal observationer: ${lifeList.sightingCount}`}</div>
-        <div>{`Månader: ${getMonths(lifeList.months)}`}</div>
-      </CardContent>
-      <CardAction className="px-4 flex gap-2"></CardAction>
-    </Card>
+    <button
+      className="flex w-full items-center gap-3 rounded-lg bg-card p-3 text-left shadow-sm transition-colors hover:bg-accent"
+      onClick={() => navigate(`/life-list/${lifeList.species.id}`, { state: { lifeList } })}
+    >
+      <div className="min-w-0 flex-1">
+        <div className="font-medium">{lifeList.species.swedishName}</div>
+        <div className="text-xs text-muted-foreground italic">{lifeList.species.scientificName}</div>
+        <div className="mt-1 flex items-center gap-2 text-xs text-muted-foreground">
+          <span>{lifeList.sightingCount} observationer</span>
+        </div>
+      </div>
+    </button>
   );
 };
 

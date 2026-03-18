@@ -1,7 +1,9 @@
 # BIRDLOG — Claude Project Context
 
-Last updated: 2026-03-17
-Current phase: Phase 4 — PWA & offline basics [NOT STARTED]
+Last updated: 2026-03-18
+Current phase: Design & styling pass [IN PROGRESS]
+Phase 3 quiz: COMPLETED
+Phase 4 (PWA & offline): DEFERRED — will do last, if at all
 
 ## About
 
@@ -33,11 +35,12 @@ npm run dev              # runs both client + server from root
 1. Scaffolding & database                    [DONE]
 2. Authentication                            [DONE]
 3. Sighting log — CRUD, geolocation, life list [DONE]
-4. PWA & offline basics
+4. Design & styling pass                     [IN PROGRESS]
 5. Artdatabanken API integration
 6. AI bird identification (Claude API) — NOTE: User wants to discuss UX/design for this before implementation
 7. Notifications & alerts (Web Push)
-8. Polish & portfolio prep
+8. PWA & offline basics (deferred — do last if needed)
+9. Polish & portfolio prep
 
 ## Phase Gate Rule
 
@@ -102,7 +105,7 @@ before proceeding. This reinforces learning and ensures concepts stick.
 - Header component: top bar with "BirdLog" title and logout button (LogOut icon from lucide-react), useAuth() for logout
 - SightingFormPage: supports both create and edit modes via useParams() (id) and useLocation() state (sighting data), pre-fills form fields in edit mode, skips geolocation fetch in edit mode, calls UPDATE_SIGHTING or CREATE_SIGHTING based on presence of id, useNavigate() redirects to / after success
 - SightingCard: edit button wired up with navigate(`/edit/${id}`, { state: { sighting } }) passing sighting data via route state
-- Layout: authenticated routes wrapped in max-w-md centered container with mb-14 for bottom nav clearance, auth routes centered with flex min-h-screen
+- Layout: Header outside container (full-width sticky), content in max-w-2xl centered container with px-4 pb-4 mb-14, auth routes centered with flex min-h-screen
 - Toaster (sonner) rendered once in App.tsx outside route blocks, position="top-center"
 - Cleaned up App.tsx: removed old species list code, useState toggles, commented-out returns
 
@@ -126,6 +129,23 @@ before proceeding. This reinforces learning and ensures concepts stick.
 - Path alias: @/* → ./src/* (vite.config.ts + tsconfig.json)
 - shadcn config: packages/client/components.json
 
+### Color Theme (oklch)
+- Primary: forest green `oklch(0.45 0.15 145)` — buttons, active nav, links
+- Background: warm gray `oklch(0.975 0.005 80)` — page background
+- Card/popover: pure white `oklch(1 0 0)` — cards pop against background
+- Foreground/text: dark green-tinted `oklch(0.18 0.03 150)`
+- Muted foreground: `oklch(0.50 0.04 150)` — secondary text
+- All theme colors defined as CSS variables in `:root` block of index.css
+- Toasts (sonner): color-coded per type using oklch (success=green h145, error=red h25, warning=amber h85, info=blue h230)
+
+### Design Patterns
+- No borders — using `shadow-sm` for cards/list items, subtle custom shadows for header/nav
+- Header: sticky, full-width, white bg, lives outside the max-w container
+- BottomNav: fixed, full-width, white bg
+- Content container: `max-w-2xl` centered with `px-4`
+- List items: compact `<button>` rows (not Card components), clickable → navigate to detail page
+- Sightings list: grouped by month/year headers
+
 ## Key Files
 
 ### Server
@@ -144,11 +164,13 @@ before proceeding. This reinforces learning and ensures concepts stick.
 - `packages/client/src/pages/LoginPage.tsx` — Login form (shadcn Card + Input)
 - `packages/client/src/pages/RegisterPage.tsx` — Register form (shadcn Card + Input)
 - `packages/client/src/pages/SightingFormPage.tsx` — Create/edit sighting form (species combobox, date, geolocation, notes, useParams for edit mode)
-- `packages/client/src/pages/SightingsListPage.tsx` — Sightings list (useQuery MY_SIGHTINGS, renders SightingCards)
-- `packages/client/src/components/SightingCard.tsx` — Sighting card (delete with toast, edit via navigate with route state, date-fns formatting)
-- `packages/client/src/components/Header.tsx` — Top bar with app title and logout button
-- `packages/client/src/components/BottomNav.tsx` — Bottom tab navigation (Observationer, Ny, Fågellista) with active tab highlighting
-- `packages/client/src/components/LifeListCard.tsx` — Life list card (species name, sighting count, last seen, months)
+- `packages/client/src/pages/SightingsListPage.tsx` — Sightings list grouped by month (useQuery MY_SIGHTINGS, renders SightingCards)
+- `packages/client/src/pages/SightingDetailPage.tsx` — Sighting detail view (all info, map placeholder, edit/delete actions)
+- `packages/client/src/pages/LifeListDetailPage.tsx` — Life list species detail (stats, map placeholder, sightings placeholder)
+- `packages/client/src/components/SightingCard.tsx` — Compact clickable sighting row (navigates to /sighting/:id)
+- `packages/client/src/components/Header.tsx` — Sticky top bar with app title and logout button
+- `packages/client/src/components/BottomNav.tsx` — Fixed bottom tab navigation (Observationer, Ny, Fågellista)
+- `packages/client/src/components/LifeListCard.tsx` — Compact clickable life list row (navigates to /life-list/:speciesId)
 - `packages/client/src/components/LoadingScreen.tsx` — Centered spinner loading screen (reusable)
 - `packages/client/src/pages/LifeListPage.tsx` — Life list page (useQuery MY_LIFE_LIST, renders LifeListCards)
 - `packages/client/src/components/ui/` — shadcn UI components (button, input, label, card, command, popover, textarea, sonner)
@@ -162,6 +184,26 @@ before proceeding. This reinforces learning and ensures concepts stick.
 - ES module imports need .js extensions even for .ts files
 - @types/express was downgraded to v4 to fix Apollo Server type conflict
 - There is one test user registered in the DB (can be cleared with prisma migrate reset)
+
+## Phase 4 Progress — Design & Styling Pass
+
+### Done
+- Color theme: green primary (oklch hue 145), warm gray background, white cards
+- Toast notifications: color-coded per type (success/error/warning/info) matching theme oklch values
+- Typography: theme classes applied (text-primary for links, text-muted-foreground for secondary text)
+- Borders → shadows: replaced all 1px borders with shadow-sm across cards, list items, detail pages
+- Card component updated (ring-1 → shadow-sm)
+- Compact list cards: SightingCard and LifeListCard are now slim clickable button rows
+- Sightings grouped by month/year headers in SightingsListPage
+- Detail pages: SightingDetailPage (/sighting/:id) and LifeListDetailPage (/life-list/:speciesId) with info cards, map placeholders, edit/delete
+- Layout: Header sticky full-width outside container, BottomNav fixed full-width, both white bg with subtle shadows
+- Container widened to max-w-2xl with w-full for responsiveness
+
+### TODO
+- Add map component (Leaflet) to detail pages — lat/lng data already available
+- LifeListDetailPage: fetch and display individual sightings for that species (mySightingsBySpecies query exists on server)
+- Landing/splash screen concept
+- Further styling polish as needed
 
 ## Future TODO
 
