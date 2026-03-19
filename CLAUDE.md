@@ -266,27 +266,51 @@ before proceeding. This reinforces learning and ensures concepts stick.
 
 ## Phase 6 Progress — AI Bird Identification
 
-### Planned
-- Photo identification: upload/snap photo → Claude API identifies the bird
-- Guided identification: step-by-step wizard (size, color, behavior → species suggestions)
-- Both paths accessible from IdentifyPage action buttons
+### Photo Identification [IN PROGRESS — blocked on API credits]
+- Full pipeline built and working end-to-end, blocked only on Anthropic API credits
+- IdentifyPage: camera button triggers hidden `<input type="file" accept="image/*">`, uses FileReader to convert to data URL, navigates to `/identify/photo` with imageData in route state
+- PhotoIdentifyPage (`/identify/photo`): reads imageData from `useLocation().state`, shows preview, "Byt foto" and "Identifiera" buttons
+- Client sends imageData (data URL) via `fetch POST` to `/api/identify` REST endpoint
+- Server: `POST /api/identify` endpoint parses data URL → extracts base64 + mediaType → calls `identifyBird()`
+- Server: `packages/server/src/services/claude.ts` — Anthropic SDK, sends image to Claude Sonnet with structured prompt
+- Claude responds with JSON array of up to 3 bird candidates (swedishName, scientificName, confidence, description in Swedish)
+- Results displayed as cards with confidence badges (color-coded: high=green, medium=amber, low=red)
+- Empty state if no bird found in image, error handling for API failures
+- `express.json({ limit: "10mb" })` on identify endpoint for large photo payloads
+
+### Infrastructure changes (this session)
+- Vite: `host: true` for network access (test on phone via local IP)
+- Apollo Client: dynamic hostname (`window.location.hostname` instead of hardcoded localhost)
+- CORS: `app.use("/api", cors(...))` global middleware for all /api routes (fixes preflight OPTIONS)
+- CORS: dev mode allows all origins (`origin: true`), production locks to domain
+- Image proxy URLs: server returns raw Wikimedia URLs, client wraps with `proxyImageUrl()` helper
+- `proxyImageUrl()` utility in `packages/client/src/lib/utils.ts` — builds proxy URL using current hostname
+- Server `.env` loaded via `--env-file=.env` flag in tsx watch (no dotenv package needed)
+- Viewport: `user-scalable=no, maximum-scale=1.0` to prevent pinch zoom
+- Layout: `min-h-dvh` / `h-dvh` instead of `min-h-screen` / `h-screen` for mobile browser chrome
+- IdentifyPage: geolocation error handler (prevents infinite skeleton loading)
+- Species imageUrl DB cache: cleared localhost URLs, now caches raw Wikimedia URLs
 
 ### TODO
-- Build photo identification page (`/identify/photo`)
+- **Get Anthropic API credits** (ask employer for workspace invite, or buy $5 individual credits)
+- Test photo identification end-to-end once credits are available
 - Build guided identification page (`/identify/guided`)
-- Integrate Claude API on server side
+- Consider: link identification results to "create sighting" flow
 
 ## Key Files (new)
 
 ### Server
 - `packages/server/src/services/artdatabanken.ts` — Artdatabanken + Wikimedia API service (getTopBirdTaxa, getTaxonName, getWikimediaImage)
-- `packages/server/src/index.ts` — Now includes image proxy endpoint (`/api/image-proxy`)
+- `packages/server/src/services/claude.ts` — Claude Vision bird identification (identifyBird function, Anthropic SDK)
+- `packages/server/src/index.ts` — Express server with Apollo GraphQL + REST endpoints (`/api/image-proxy`, `/api/identify`)
 
 ### Client
-- `packages/client/src/pages/IdentifyPage.tsx` — Landing page with nearby birds (hero + list) + action buttons
+- `packages/client/src/pages/IdentifyPage.tsx` — Landing page with nearby birds (hero + list) + action buttons + hidden file input for photo capture
+- `packages/client/src/pages/PhotoIdentifyPage.tsx` — Photo identification page (preview, identify button, results display)
 - `packages/client/src/components/BottomNav.tsx` — Updated: Identifiera, Observationer, Fågellista
 - `packages/client/src/components/ui/skeleton.tsx` — Skeleton loading component
 - `packages/client/src/utils/types.ts` — Shared TypeScript interfaces (Species, Sighting, MyLifeList)
+- `packages/client/src/lib/utils.ts` — cn() utility + proxyImageUrl() helper
 
 ## Future TODO
 

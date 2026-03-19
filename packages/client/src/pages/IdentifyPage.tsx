@@ -3,8 +3,9 @@ import { NEARBY_BIRDS } from "@/graphql/queries";
 import { proxyImageUrl } from "@/lib/utils";
 import { useQuery } from "@apollo/client";
 import { BirdIcon, CameraIcon, PlusIcon, WandSparklesIcon } from "lucide-react";
-import { useEffect, useState } from "react";
+import { ChangeEvent, useEffect, useState } from "react";
 import { useNavigate } from "react-router-dom";
+import { useRef } from "react";
 
 interface NearbyBird {
   scientificName: string;
@@ -48,6 +49,7 @@ const ListSkeleton = () => (
 
 const IdentifyPage = () => {
   const navigate = useNavigate();
+  const fileInputRef = useRef<HTMLInputElement>(null);
 
   const [latitude, setLatitude] = useState<number | null>(null);
   const [longitude, setLongitude] = useState<number | null>(null);
@@ -67,6 +69,17 @@ const IdentifyPage = () => {
       () => setGeoError(true),
     );
   }, []);
+
+  const handlePhotoSelect = (e: ChangeEvent<HTMLInputElement>) => {
+    const file = e.target.files?.[0];
+    if (!file) return;
+
+    const reader = new FileReader();
+    reader.onload = () => {
+      navigate("/identify/photo", { state: { imageData: reader.result } });
+    };
+    reader.readAsDataURL(file);
+  };
 
   const allCommon: NearbyBird[] = data?.nearbyBirds?.common ?? [];
   const rareBird: NearbyBird | null = data?.nearbyBirds?.rare ?? null;
@@ -88,9 +101,7 @@ const IdentifyPage = () => {
           const isRare = !!rareBird;
           return (
             <div className="relative overflow-hidden rounded-xl shadow-sm">
-              <div
-                className={`flex h-32 items-center ${isRare ? "bg-amber-50" : "bg-primary/5"}`}
-              >
+              <div className={`flex h-32 items-center ${isRare ? "bg-amber-50" : "bg-primary/5"}`}>
                 {hero.imageUrl ? (
                   <img
                     src={proxyImageUrl(hero.imageUrl) ?? undefined}
@@ -105,9 +116,7 @@ const IdentifyPage = () => {
                 <div
                   className={`${hero.imageUrl ? "hidden" : ""} flex h-full w-28 flex-shrink-0 items-center justify-center ${isRare ? "bg-amber-100" : "bg-primary/10"}`}
                 >
-                  <BirdIcon
-                    className={`size-6 ${isRare ? "text-amber-600" : "text-primary"}`}
-                  />
+                  <BirdIcon className={`size-6 ${isRare ? "text-amber-600" : "text-primary"}`} />
                 </div>
                 <div className="flex flex-1 flex-col gap-1 px-4">
                   <p
@@ -158,7 +167,9 @@ const IdentifyPage = () => {
                         }}
                       />
                     ) : null}
-                    <div className={`${bird.imageUrl ? "hidden" : ""} flex size-full items-center justify-center`}>
+                    <div
+                      className={`${bird.imageUrl ? "hidden" : ""} flex size-full items-center justify-center`}
+                    >
                       <BirdIcon className="size-5 text-primary/40" />
                     </div>
                   </div>
@@ -181,6 +192,14 @@ const IdentifyPage = () => {
         </div>
       </div>
 
+      <input
+        ref={fileInputRef}
+        type="file"
+        accept="image/*"
+        className="hidden"
+        onChange={handlePhotoSelect}
+      />
+
       <div className="flex justify-center gap-6">
         <button
           className="flex size-14 items-center justify-center rounded-full bg-card shadow-sm active:scale-95"
@@ -196,7 +215,7 @@ const IdentifyPage = () => {
         </button>
         <button
           className="flex size-14 items-center justify-center rounded-full bg-card shadow-sm active:scale-95"
-          onClick={() => navigate("/identify/photo")}
+          onClick={() => fileInputRef.current?.click()}
         >
           <CameraIcon className="size-6 text-primary" />
         </button>

@@ -11,6 +11,7 @@ import { Toaster } from "./components/ui/sonner.js";
 import BottomNav from "./components/BottomNav.js";
 import Header from "./components/Header.js";
 import IdentifyPage from "./pages/IdentifyPage.js";
+import PhotoIdentifyPage from "./pages/PhotoIdentifyPage.js";
 
 function App() {
   const { user } = useAuth();
@@ -32,7 +33,7 @@ function App() {
             <Routes>
               <Route path="/" element={<IdentifyPage />} />
               <Route path="/identify/guided" element={<div>Kommer snart</div>} />
-              <Route path="/identify/photo" element={<div>Kommer snart</div>} />
+              <Route path="/identify/photo" element={<PhotoIdentifyPage />} />
               <Route path="/sightings" element={<SightingsListPage />} />
               <Route path="/sighting/:id" element={<SightingDetailPage />} />
               <Route path="/new" element={<SightingFormPage key="new" />} />
