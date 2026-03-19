@@ -41,6 +41,13 @@ export const typeDefs = gql`
     months: [Int!]!
   }
 
+  type BirdOfTheDay {
+    scientificName: String!
+    vernacularName: String!
+    imageUrl: String
+    observationCount: Int!
+  }
+
   type Query {
     species: [Species!]!
     speciesById(id: ID!): Species
@@ -49,6 +56,7 @@ export const typeDefs = gql`
     mySightings: [Sighting!]!
     mySightingsBySpecies(speciesId: ID!): [Sighting!]!
     myLifeList: [LifeListEntry!]!
+    birdOfTheDay(latitude: Float!, longitude: Float!): BirdOfTheDay
   }
 
   type Mutation {

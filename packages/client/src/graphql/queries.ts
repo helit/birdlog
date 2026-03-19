@@ -92,3 +92,14 @@ export const MY_LIFE_LIST = gql`
     }
   }
 `;
+
+export const BIRD_OF_THE_DAY = gql`
+  query birdOfTheDay($latitude: Float!, $longitude: Float!) {
+    birdOfTheDay(latitude: $latitude, longitude: $longitude) {
+      scientificName
+      vernacularName
+      imageUrl
+      observationCount
+    }
+  }
+`;

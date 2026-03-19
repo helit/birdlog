@@ -175,7 +175,11 @@ const SightingFormPage = () => {
               }
               navigate("/");
             } catch (error) {
-              toast.error(id ? "Kunde inte uppdatera. Försök igen." : "Observation kunde inte sparas. Vänligen försök igen.");
+              toast.error(
+                id
+                  ? "Kunde inte uppdatera. Försök igen."
+                  : "Observation kunde inte sparas. Vänligen försök igen.",
+              );
               console.error(error);
             }
           }}

@@ -2,6 +2,11 @@ import { PrismaClient } from "@prisma/client";
 import { generateToken, GraphQLContext, requireAuth } from "../middleware/auth.js";
 import { GraphQLError } from "graphql";
 import bcrypt from "bcrypt";
+import {
+  getTopBirdTaxa,
+  getTaxonName,
+  getWikimediaImage,
+} from "../services/artdatabanken.js";
 
 const prisma = new PrismaClient();
 
@@ -91,6 +96,33 @@ export const resolvers = {
         include: { species: true },
         orderBy: [{ date: "desc" }, { id: "desc" }],
       });
+    },
+
+    birdOfTheDay: async (
+      _: unknown,
+      { latitude, longitude }: { latitude: number; longitude: number },
+    ) => {
+      const taxa = await getTopBirdTaxa(latitude, longitude);
+      if (taxa.length === 0) return null;
+
+      // Pick a random species from the top 10 most observed
+      const pool = taxa.slice(0, Math.min(10, taxa.length));
+      const pick = pool[Math.floor(Math.random() * pool.length)];
+
+      const names = await getTaxonName(pick.taxonId);
+      if (!names) return null;
+
+      const wikimediaUrl = await getWikimediaImage(names.scientificName);
+      const imageUrl = wikimediaUrl
+        ? `http://localhost:4000/api/image-proxy?url=${encodeURIComponent(wikimediaUrl)}`
+        : null;
+
+      return {
+        scientificName: names.scientificName,
+        vernacularName: names.vernacularName,
+        imageUrl,
+        observationCount: pick.observationCount,
+      };
     },
 
     myLifeList: async (_: unknown, __: unknown, context: GraphQLContext) => {

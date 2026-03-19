@@ -1,9 +1,9 @@
 # BIRDLOG — Claude Project Context
 
-Last updated: 2026-03-18
-Current phase: Design & styling pass [IN PROGRESS]
+Last updated: 2026-03-19
+Current phase: Artdatabanken API integration + AI identification [IN PROGRESS]
 Phase 3 quiz: COMPLETED
-Phase 4 (PWA & offline): DEFERRED — will do last, if at all
+Phase 8 (PWA & offline): DEFERRED — will do last, if at all
 
 ## About
 
@@ -35,9 +35,9 @@ npm run dev              # runs both client + server from root
 1. Scaffolding & database                    [DONE]
 2. Authentication                            [DONE]
 3. Sighting log — CRUD, geolocation, life list [DONE]
-4. Design & styling pass                     [IN PROGRESS]
-5. Artdatabanken API integration
-6. AI bird identification (Claude API) — NOTE: User wants to discuss UX/design for this before implementation
+4. Design & styling pass                     [DONE]
+5. Artdatabanken API integration             [IN PROGRESS]
+6. AI bird identification (Claude API)       [IN PROGRESS]
 7. Notifications & alerts (Web Push)
 8. PWA & offline basics (deferred — do last if needed)
 9. Polish & portfolio prep
@@ -211,9 +211,55 @@ before proceeding. This reinforces learning and ensures concepts stick.
 - LifeListDetailPage: multi-marker map showing all sighting locations for species
 - LifeListDetailPage: fetches and displays individual sightings per species (MY_SIGHTINGS_BY_SPECIES query, date/location/notes per sighting)
 
+### Landing / Identify page [DONE]
+- IdentifyPage is now the home screen (`/`), sightings list moved to `/sightings`
+- BottomNav updated: Identifiera (/) | Observationer (/sightings) | Fågellista (/life-list)
+- Bird-of-the-day: random species from top 10 most observed near user's location this month
+- Image fetched from Wikipedia API by scientific name, proxied through Express to avoid CORS
+- Three round action buttons: guided ID, new observation, photo ID
+- Placeholder routes for `/identify/guided` and `/identify/photo`
+
+## Phase 5 Progress — Artdatabanken API Integration
+
+### Done
+- Artdatabanken API subscription active (Species Observations - multiple data resources)
+- API key stored in `packages/server/.env` as `ARTDATABANKEN_API_KEY`
+- Base URL: `https://api.artdatabanken.se/species-observation-system/v1/`
+- Auth: `Ocp-Apim-Subscription-Key` header
+- Birds taxon ID: `4000104` with `includeUnderlyingTaxa: true`
+- Service module: `packages/server/src/services/artdatabanken.ts`
+  - `getTopBirdTaxa(lat, lng)` — POST TaxonAggregation, filters by birds + current month + 15km radius
+  - `getTaxonName(taxonId)` — POST Observations/Search to get scientificName + vernacularName
+  - `getWikimediaImage(scientificName)` — Wikipedia REST API, returns 800px-wide image URL
+- GraphQL: `BirdOfTheDay` type + `birdOfTheDay(latitude, longitude)` query
+- Image proxy: `GET /api/image-proxy?url=...` on Express server (Wikimedia URLs only, 24h cache, User-Agent header required)
+- Client: `BIRD_OF_THE_DAY` query in queries.ts, used in IdentifyPage with geolocation + `skip: !latitude`
+
 ### TODO
-- Landing/splash screen concept
-- Further styling polish as needed
+- Bird-of-the-day should be deterministic per day (currently random on every page load)
+- Consider caching Artdatabanken responses to reduce API calls
+
+## Phase 6 Progress — AI Bird Identification
+
+### Planned
+- Photo identification: upload/snap photo → Claude API identifies the bird
+- Guided identification: step-by-step wizard (size, color, behavior → species suggestions)
+- Both paths accessible from IdentifyPage action buttons
+
+### TODO
+- Build photo identification page (`/identify/photo`)
+- Build guided identification page (`/identify/guided`)
+- Integrate Claude API on server side
+
+## Key Files (new)
+
+### Server
+- `packages/server/src/services/artdatabanken.ts` — Artdatabanken + Wikimedia API service
+- `packages/server/src/index.ts` — Now includes image proxy endpoint (`/api/image-proxy`)
+
+### Client
+- `packages/client/src/pages/IdentifyPage.tsx` — Landing page with bird-of-the-day + action buttons
+- `packages/client/src/components/BottomNav.tsx` — Updated: Identifiera, Observationer, Fågellista
 
 ## Future TODO
 
