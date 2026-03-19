@@ -125,7 +125,7 @@ before proceeding. This reinforces learning and ensures concepts stick.
 ## Styling
 
 - Tailwind CSS 4 + shadcn/ui component library
-- shadcn components used: Button, Input, Label, Card, Command, Popover, Textarea, Sonner (toast)
+- shadcn components used: Button, Input, Label, Card, Command, Popover, Textarea, Sonner (toast), Skeleton
 - Path alias: @/* → ./src/* (vite.config.ts + tsconfig.json)
 - shadcn config: packages/client/components.json
 
@@ -158,7 +158,7 @@ before proceeding. This reinforces learning and ensures concepts stick.
 ### Client
 - `packages/client/src/main.tsx` — Apollo Client setup + React root (BrowserRouter + authLink + httpLink)
 - `packages/client/src/App.tsx` — Main app component (conditional routing: auth vs authenticated routes)
-- `packages/client/src/graphql/queries.ts` — GET_ALL_SPECIES, SEARCH_SPECIES, ME_QUERY, MY_SIGHTINGS, MY_SIGHTINGS_BY_SPECIES, MY_LIFE_LIST
+- `packages/client/src/graphql/queries.ts` — GET_ALL_SPECIES, SEARCH_SPECIES, ME_QUERY, MY_SIGHTINGS, MY_SIGHTINGS_BY_SPECIES, MY_LIFE_LIST, NEARBY_BIRDS
 - `packages/client/src/graphql/mutations.ts` — LOGIN_MUTATION, REGISTER_MUTATION, CREATE_SIGHTING, UPDATE_SIGHTING, DELETE_SIGHTING
 - `packages/client/src/context/AuthContext.tsx` — AuthProvider, useAuth hook
 - `packages/client/src/pages/LoginPage.tsx` — Login form (shadcn Card + Input)
@@ -214,8 +214,9 @@ before proceeding. This reinforces learning and ensures concepts stick.
 ### Landing / Identify page [DONE]
 - IdentifyPage is now the home screen (`/`), sightings list moved to `/sightings`
 - BottomNav updated: Identifiera (/) | Observationer (/sightings) | Fågellista (/life-list)
-- Bird-of-the-day: random species from top 10 most observed near user's location this month
-- Image fetched from Wikipedia API by scientific name, proxied through Express to avoid CORS
+- Nearby birds: hero card (rare or #1 most observed) + list of 5 common birds, sorted by observation count
+- Images fetched from Wikipedia API, proxied through Express, sized at 200px
+- Skeleton loading for hero + list while geolocation and API resolve
 - Three round action buttons: guided ID, new observation, photo ID
 - Placeholder routes for `/identify/guided` and `/identify/photo`
 
@@ -230,13 +231,37 @@ before proceeding. This reinforces learning and ensures concepts stick.
 - Service module: `packages/server/src/services/artdatabanken.ts`
   - `getTopBirdTaxa(lat, lng)` — POST TaxonAggregation, filters by birds + current month + 15km radius
   - `getTaxonName(taxonId)` — POST Observations/Search to get scientificName + vernacularName
-  - `getWikimediaImage(scientificName)` — Wikipedia REST API, returns 800px-wide image URL
-- GraphQL: `BirdOfTheDay` type + `birdOfTheDay(latitude, longitude)` query
+  - `getWikimediaImage(scientificName, widthPx=200)` — Wikipedia REST API, returns sized thumbnail URL
 - Image proxy: `GET /api/image-proxy?url=...` on Express server (Wikimedia URLs only, 24h cache, User-Agent header required)
-- Client: `BIRD_OF_THE_DAY` query in queries.ts, used in IdentifyPage with geolocation + `skip: !latitude`
+
+#### Nearby Birds (replaces bird-of-the-day)
+- GraphQL: `NearbyBird` type, `NearbyBirdsResult` type (`common: [NearbyBird!]!`, `rare: NearbyBird`), `nearbyBirds(lat, lng)` query
+- Server resolver: fetches top 20 taxa from Artdatabanken, returns top 6 most observed as `common`, plus a `rare` outlier if one has <25% of median observations
+- Names + images fetched in parallel via `Promise.all`
+- Client: `NEARBY_BIRDS` query in queries.ts
+
+#### IdentifyPage (landing page)
+- Hero card: shows rare bird (amber theme, "Ovanlig observation") if available, otherwise #1 most observed (green theme, "Mest observerad just nu")
+- List: 5 common birds below hero (when no rare bird, hero takes #1 and list shows #2–#6)
+- Each item: 48px thumbnail, Swedish + scientific name, observation count
+- Skeleton loading for both hero and list (shows while geolocation + API loading)
+- BirdIcon (lucide) fallback for missing/broken images with onError handler
+- Three action buttons: guided ID, new observation, photo ID
+
+#### Species Image Caching
+- `Species.imageUrl` field resolver on server — lazily fetches Wikipedia thumbnail on first access, caches URL in DB (Species.imageUrl column)
+- Subsequent loads return cached URL instantly (no Wikipedia API call)
+- Images served at 200px width (retina-friendly for 48–112px display sizes)
+- Wikimedia image URL uses thumbnail endpoint (not original) for correct size control
+
+#### Life List Improvements
+- LifeListCard: added 48px image thumbnails with BirdIcon fallback and `loading="lazy"`
+- LifeListPage: skeleton loading (8 placeholder cards) instead of spinner
+
+#### Reusable Components
+- `packages/client/src/components/ui/skeleton.tsx` — animate-pulse skeleton component (shadcn pattern)
 
 ### TODO
-- Bird-of-the-day should be deterministic per day (currently random on every page load)
 - Consider caching Artdatabanken responses to reduce API calls
 
 ## Phase 6 Progress — AI Bird Identification
@@ -254,12 +279,14 @@ before proceeding. This reinforces learning and ensures concepts stick.
 ## Key Files (new)
 
 ### Server
-- `packages/server/src/services/artdatabanken.ts` — Artdatabanken + Wikimedia API service
+- `packages/server/src/services/artdatabanken.ts` — Artdatabanken + Wikimedia API service (getTopBirdTaxa, getTaxonName, getWikimediaImage)
 - `packages/server/src/index.ts` — Now includes image proxy endpoint (`/api/image-proxy`)
 
 ### Client
-- `packages/client/src/pages/IdentifyPage.tsx` — Landing page with bird-of-the-day + action buttons
+- `packages/client/src/pages/IdentifyPage.tsx` — Landing page with nearby birds (hero + list) + action buttons
 - `packages/client/src/components/BottomNav.tsx` — Updated: Identifiera, Observationer, Fågellista
+- `packages/client/src/components/ui/skeleton.tsx` — Skeleton loading component
+- `packages/client/src/utils/types.ts` — Shared TypeScript interfaces (Species, Sighting, MyLifeList)
 
 ## Future TODO
 

@@ -19,7 +19,6 @@ const BottomNav = () => {
           )}
         >
           <CircleQuestionMarkIcon />
-          <span className="text-xs">Identifiera</span>
           {isActive("/") && <span className="absolute bottom-0 h-0.5 w-full bg-primary" />}
         </Link>
         <Link
@@ -30,7 +29,6 @@ const BottomNav = () => {
           )}
         >
           <BinocularsIcon />
-          <span className="text-xs">Observationer</span>
           {isActive("/sightings") && <span className="absolute bottom-0 h-0.5 w-full bg-primary" />}
         </Link>
         <Link
@@ -41,7 +39,6 @@ const BottomNav = () => {
           )}
         >
           <BirdIcon />
-          <span className="text-xs">Fågellista</span>
           {isActive("/life-list") && <span className="absolute bottom-0 h-0.5 w-full bg-primary" />}
         </Link>
       </div>

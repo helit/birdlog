@@ -93,13 +93,21 @@ export const MY_LIFE_LIST = gql`
   }
 `;
 
-export const BIRD_OF_THE_DAY = gql`
-  query birdOfTheDay($latitude: Float!, $longitude: Float!) {
-    birdOfTheDay(latitude: $latitude, longitude: $longitude) {
-      scientificName
-      vernacularName
-      imageUrl
-      observationCount
+export const NEARBY_BIRDS = gql`
+  query NearbyBirds($latitude: Float!, $longitude: Float!) {
+    nearbyBirds(latitude: $latitude, longitude: $longitude) {
+      common {
+        scientificName
+        vernacularName
+        imageUrl
+        observationCount
+      }
+      rare {
+        scientificName
+        vernacularName
+        imageUrl
+        observationCount
+      }
     }
   }
 `;

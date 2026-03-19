@@ -104,6 +104,7 @@ export async function getTaxonName(
 
 export async function getWikimediaImage(
   scientificName: string,
+  widthPx = 200,
 ): Promise<string | null> {
   const slug = scientificName.replace(/ /g, "_");
   const res = await fetch(
@@ -114,10 +115,9 @@ export async function getWikimediaImage(
   if (!res.ok) return null;
 
   const data = await res.json();
-  const original = data.originalimage?.source as string | undefined;
-  if (original) {
-    // Request a 800px wide version from Wikimedia instead of the full original
-    return original.replace(/\/(\d+px-)/, "/800px-");
+  const thumbnail = data.thumbnail?.source as string | undefined;
+  if (thumbnail) {
+    return thumbnail.replace(/\/(\d+px-)/, `/${widthPx}px-`);
   }
-  return data.thumbnail?.source ?? null;
+  return null;
 }

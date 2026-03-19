@@ -173,7 +173,7 @@ const SightingFormPage = () => {
                 });
                 toast.success("Observation sparad!");
               }
-              navigate("/");
+              navigate("/sightings");
             } catch (error) {
               toast.error(
                 id

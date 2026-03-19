@@ -5,6 +5,7 @@ export interface Species {
   englishName?: string | null;
   family?: string | null;
   description?: string | null;
+  imageUrl?: string | null;
 }
 
 export interface Sighting {

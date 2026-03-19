@@ -41,6 +41,26 @@ interface UpdateSightingArgs {
 }
 
 export const resolvers = {
+  Species: {
+    imageUrl: async (species: { id: string; scientificName: string; imageUrl: string | null }) => {
+      // Return cached URL if already stored
+      if (species.imageUrl) return species.imageUrl;
+
+      // Fetch from Wikipedia and cache in DB
+      const wikimediaUrl = await getWikimediaImage(species.scientificName);
+      if (!wikimediaUrl) return null;
+
+      const imageUrl = `http://localhost:4000/api/image-proxy?url=${encodeURIComponent(wikimediaUrl)}`;
+
+      // Cache asynchronously — don't block the response
+      prisma.species
+        .update({ where: { id: species.id }, data: { imageUrl } })
+        .catch(() => {});
+
+      return imageUrl;
+    },
+  },
+
   Sighting: {
     date: (sighting: { date: Date }) => sighting.date.toISOString(),
     createdAt: (sighting: { createdAt: Date }) => sighting.createdAt.toISOString(),
@@ -98,31 +118,62 @@ export const resolvers = {
       });
     },
 
-    birdOfTheDay: async (
+    nearbyBirds: async (
       _: unknown,
       { latitude, longitude }: { latitude: number; longitude: number },
     ) => {
       const taxa = await getTopBirdTaxa(latitude, longitude);
-      if (taxa.length === 0) return null;
+      if (taxa.length === 0) return { common: [], rare: null };
 
-      // Pick a random species from the top 10 most observed
-      const pool = taxa.slice(0, Math.min(10, taxa.length));
-      const pick = pool[Math.floor(Math.random() * pool.length)];
+      // Top 6 most observed (hero card uses #1 when no rare bird, list shows the rest)
+      const common5 = taxa.slice(0, 6);
 
-      const names = await getTaxonName(pick.taxonId);
-      if (!names) return null;
+      // Find a rare bird: least observed taxon, only if it has
+      // significantly fewer observations than the median (< 25%)
+      const sorted = [...taxa].sort((a, b) => a.observationCount - b.observationCount);
+      const median = sorted[Math.floor(sorted.length / 2)].observationCount;
+      const rarest = sorted[0];
+      const rareTaxon =
+        rarest.observationCount < median * 0.25 ? rarest : null;
 
-      const wikimediaUrl = await getWikimediaImage(names.scientificName);
-      const imageUrl = wikimediaUrl
-        ? `http://localhost:4000/api/image-proxy?url=${encodeURIComponent(wikimediaUrl)}`
-        : null;
+      // Collect all taxa we need to look up (deduplicate if rare is already in common)
+      const toFetch = [...common5];
+      if (rareTaxon && !common5.some((t) => t.taxonId === rareTaxon.taxonId)) {
+        toFetch.push(rareTaxon);
+      }
 
-      return {
-        scientificName: names.scientificName,
-        vernacularName: names.vernacularName,
-        imageUrl,
-        observationCount: pick.observationCount,
-      };
+      // Fetch names + images in parallel
+      const resolved = await Promise.all(
+        toFetch.map(async (t) => {
+          const names = await getTaxonName(t.taxonId);
+          if (!names) return null;
+
+          const wikimediaUrl = await getWikimediaImage(names.scientificName);
+          const imageUrl = wikimediaUrl
+            ? `http://localhost:4000/api/image-proxy?url=${encodeURIComponent(wikimediaUrl)}`
+            : null;
+
+          return {
+            taxonId: t.taxonId,
+            scientificName: names.scientificName,
+            vernacularName: names.vernacularName,
+            imageUrl,
+            observationCount: t.observationCount,
+          };
+        }),
+      );
+
+      const byTaxon = new Map(
+        resolved.filter((b) => b !== null).map((b) => [b.taxonId, b]),
+      );
+
+      const common = common5
+        .map((t) => byTaxon.get(t.taxonId))
+        .filter((b) => b !== undefined);
+
+      const rare = rareTaxon ? byTaxon.get(rareTaxon.taxonId) ?? null : null;
+
+      return { common, rare };
     },
 
     myLifeList: async (_: unknown, __: unknown, context: GraphQLContext) => {
