@@ -1,5 +1,5 @@
 import { cn } from "@/lib/utils";
-import { BinocularsIcon, BirdIcon, PlusIcon } from "lucide-react";
+import { BinocularsIcon, BirdIcon, CircleQuestionMarkIcon } from "lucide-react";
 import { Link } from "react-router-dom";
 import { useLocation } from "react-router-dom";
 
@@ -18,20 +18,20 @@ const BottomNav = () => {
             isActive("/") ? "bg-primary/10 text-primary" : "text-muted-foreground",
           )}
         >
-          <BinocularsIcon />
-          <span className="text-xs">Observationer</span>
+          <CircleQuestionMarkIcon />
+          <span className="text-xs">Identifiera</span>
           {isActive("/") && <span className="absolute bottom-0 h-0.5 w-full bg-primary" />}
         </Link>
         <Link
-          to="/new"
+          to="/sightings"
           className={cn(
             "relative flex flex-1 flex-col items-center p-2",
-            isActive("/new") ? "bg-primary/10 text-primary" : "text-muted-foreground",
+            isActive("/sightings") ? "bg-primary/10 text-primary" : "text-muted-foreground",
           )}
         >
-          <PlusIcon />
-          <span className="text-xs">Ny</span>
-          {isActive("/new") && <span className="absolute bottom-0 h-0.5 w-full bg-primary" />}
+          <BinocularsIcon />
+          <span className="text-xs">Observationer</span>
+          {isActive("/sightings") && <span className="absolute bottom-0 h-0.5 w-full bg-primary" />}
         </Link>
         <Link
           to="/life-list"

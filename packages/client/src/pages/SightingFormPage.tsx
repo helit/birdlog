@@ -73,10 +73,8 @@ const SightingFormPage = () => {
         <div className="flex flex-col gap-1">
           <label className="text-sm font-medium">Art</label>
           <Popover open={open} onOpenChange={setOpen}>
-            <PopoverTrigger>
-              <Button variant="outline" className="w-full justify-start">
-                {selectedSpeciesName || "Sök art..."}
-              </Button>
+            <PopoverTrigger className="flex w-full items-center rounded-md border border-input bg-background px-3 py-2 text-sm text-left hover:bg-accent">
+              {selectedSpeciesName || <span className="text-muted-foreground">Sök art...</span>}
             </PopoverTrigger>
             <PopoverContent className="w-[calc(100vw-4rem)] p-0" align="start">
               <Command shouldFilter={false}>

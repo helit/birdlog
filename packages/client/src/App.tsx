@@ -10,6 +10,7 @@ import LifeListDetailPage from "./pages/LifeListDetailPage.js";
 import { Toaster } from "./components/ui/sonner.js";
 import BottomNav from "./components/BottomNav.js";
 import Header from "./components/Header.js";
+import IdentifyPage from "./pages/IdentifyPage.js";
 
 function App() {
   const { user } = useAuth();
@@ -29,7 +30,10 @@ function App() {
           <Header />
           <div className="mx-auto w-full max-w-2xl px-4 pb-20">
             <Routes>
-              <Route path="/" element={<SightingsListPage />} />
+              <Route path="/" element={<IdentifyPage />} />
+              <Route path="/identify/guided" element={<div>Kommer snart</div>} />
+              <Route path="/identify/photo" element={<div>Kommer snart</div>} />
+              <Route path="/sightings" element={<SightingsListPage />} />
               <Route path="/sighting/:id" element={<SightingDetailPage />} />
               <Route path="/new" element={<SightingFormPage key="new" />} />
               <Route path="/edit/:id" element={<SightingFormPage key="edit" />} />
