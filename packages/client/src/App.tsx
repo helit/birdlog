@@ -18,7 +18,7 @@ function App() {
   return (
     <>
       {!user ? (
-        <div className="flex min-h-screen items-center justify-center p-4">
+        <div className="flex min-h-dvh items-center justify-center p-4">
           <Routes>
             <Route path="/login" element={<LoginPage />} />
             <Route path="/register" element={<RegisterPage />} />

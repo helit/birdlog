@@ -1,3 +1,4 @@
+import { proxyImageUrl } from "@/lib/utils";
 import { MyLifeList } from "@/utils/types";
 import { BirdIcon } from "lucide-react";
 import { useNavigate } from "react-router-dom";
@@ -17,7 +18,7 @@ const LifeListCard = ({ lifeList }: LifeListCardProps) => {
       <div className="size-12 flex-shrink-0 overflow-hidden rounded-lg bg-primary/10">
         {lifeList.species.imageUrl ? (
           <img
-            src={lifeList.species.imageUrl}
+            src={proxyImageUrl(lifeList.species.imageUrl) ?? undefined}
             alt={lifeList.species.swedishName}
             className="size-full object-cover"
             loading="lazy"

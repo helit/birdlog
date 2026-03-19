@@ -1,5 +1,6 @@
 import { Skeleton } from "@/components/ui/skeleton";
 import { NEARBY_BIRDS } from "@/graphql/queries";
+import { proxyImageUrl } from "@/lib/utils";
 import { useQuery } from "@apollo/client";
 import { BirdIcon, CameraIcon, PlusIcon, WandSparklesIcon } from "lucide-react";
 import { useEffect, useState } from "react";
@@ -50,6 +51,7 @@ const IdentifyPage = () => {
 
   const [latitude, setLatitude] = useState<number | null>(null);
   const [longitude, setLongitude] = useState<number | null>(null);
+  const [geoError, setGeoError] = useState(false);
 
   const { data, loading } = useQuery(NEARBY_BIRDS, {
     variables: { latitude, longitude },
@@ -57,10 +59,13 @@ const IdentifyPage = () => {
   });
 
   useEffect(() => {
-    navigator.geolocation.getCurrentPosition((pos) => {
-      setLatitude(pos.coords.latitude);
-      setLongitude(pos.coords.longitude);
-    });
+    navigator.geolocation.getCurrentPosition(
+      (pos) => {
+        setLatitude(pos.coords.latitude);
+        setLongitude(pos.coords.longitude);
+      },
+      () => setGeoError(true),
+    );
   }, []);
 
   const allCommon: NearbyBird[] = data?.nearbyBirds?.common ?? [];
@@ -70,7 +75,7 @@ const IdentifyPage = () => {
   const hero = rareBird ?? allCommon[0] ?? null;
   const birds = rareBird ? allCommon.slice(0, 5) : allCommon.slice(1, 6);
 
-  const isLoading = loading || !latitude;
+  const isLoading = !geoError && (loading || !latitude);
 
   return (
     <div className="flex flex-col gap-4">
@@ -88,7 +93,7 @@ const IdentifyPage = () => {
               >
                 {hero.imageUrl ? (
                   <img
-                    src={hero.imageUrl}
+                    src={proxyImageUrl(hero.imageUrl) ?? undefined}
                     alt={hero.vernacularName}
                     className="h-full w-28 flex-shrink-0 object-cover"
                     onError={(e) => {
@@ -144,7 +149,7 @@ const IdentifyPage = () => {
                   <div className="size-12 flex-shrink-0 overflow-hidden rounded-lg bg-primary/10">
                     {bird.imageUrl ? (
                       <img
-                        src={bird.imageUrl}
+                        src={proxyImageUrl(bird.imageUrl) ?? undefined}
                         alt={bird.vernacularName}
                         className="size-full object-cover"
                         onError={(e) => {

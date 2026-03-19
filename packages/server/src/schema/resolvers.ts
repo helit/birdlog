@@ -50,7 +50,7 @@ export const resolvers = {
       const wikimediaUrl = await getWikimediaImage(species.scientificName);
       if (!wikimediaUrl) return null;
 
-      const imageUrl = `http://localhost:4000/api/image-proxy?url=${encodeURIComponent(wikimediaUrl)}`;
+      const imageUrl = wikimediaUrl;
 
       // Cache asynchronously — don't block the response
       prisma.species
@@ -148,10 +148,7 @@ export const resolvers = {
           const names = await getTaxonName(t.taxonId);
           if (!names) return null;
 
-          const wikimediaUrl = await getWikimediaImage(names.scientificName);
-          const imageUrl = wikimediaUrl
-            ? `http://localhost:4000/api/image-proxy?url=${encodeURIComponent(wikimediaUrl)}`
-            : null;
+          const imageUrl = await getWikimediaImage(names.scientificName);
 
           return {
             taxonId: t.taxonId,

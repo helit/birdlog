@@ -16,7 +16,10 @@ const server = new ApolloServer({
 
 await server.start();
 
-const allowedOrigins = ["http://localhost:5173", "http://localhost:3000"];
+const allowedOrigins =
+  process.env.NODE_ENV === "production"
+    ? ["https://birdlog.henlit.se"]
+    : true;
 
 app.use(
   "/graphql",
@@ -33,7 +36,7 @@ app.use(
 
 app.get(
   "/api/image-proxy",
-  cors<cors.CorsRequest>({ origin: allowedOrigins }),
+  cors<cors.CorsRequest>({ origin: allowedOrigins as cors.CorsOptions["origin"] }),
   async (req, res) => {
     const url = req.query.url as string;
     if (!url || !url.startsWith("https://upload.wikimedia.org/")) {
