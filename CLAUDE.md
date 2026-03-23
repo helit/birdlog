@@ -1,8 +1,9 @@
 # BIRDLOG — Claude Project Context
 
 Last updated: 2026-03-23
-Current phase: AI identification — OpenAI API [IN PROGRESS]
+Current phase: Phase 6 DONE, Phase 7 next (Notifications & Alerts)
 Phase 3 quiz: COMPLETED
+Phase 6 quiz: COMPLETED (5/8)
 Phase 8 (PWA & offline): DEFERRED — will do last, if at all
 
 ## About
@@ -14,7 +15,7 @@ Repo: https://github.com/helit/birdlog
 
 - Frontend: React 18, TypeScript, Vite, Apollo Client 3, React Router 7, Tailwind CSS 4, shadcn/ui
 - Backend: Node.js, Apollo Server 4, GraphQL, Express
-- Database: PostgreSQL + PostGIS via Docker Compose
+- Database: PostgreSQL via Docker Compose
 - ORM: Prisma
 - Auth: bcrypt + jsonwebtoken (JWT)
 - Monorepo: npm workspaces (packages/client, packages/server, packages/shared)
@@ -37,7 +38,7 @@ npm run dev              # runs both client + server from root
 3. Sighting log — CRUD, geolocation, life list [DONE]
 4. Design & styling pass                     [DONE]
 5. Artdatabanken API integration             [DONE]
-6. AI bird identification (OpenAI API)       [IN PROGRESS]
+6. AI bird identification (OpenAI API)       [DONE]
 7. Notifications & alerts (Web Push)
 8. PWA & offline basics (deferred — do last if needed)
 9. Polish & portfolio prep
@@ -118,7 +119,7 @@ before proceeding. This reinforces learning and ensures concepts stick.
 
 ### Phase 1 — Scaffolding & Database
 - Prisma schema: User, Species, Sighting models
-- PostgreSQL + PostGIS via Docker Compose
+- PostgreSQL via Docker Compose
 - Apollo Server + Express setup
 - Species queries (list, search, byId)
 
@@ -303,11 +304,12 @@ before proceeding. This reinforces learning and ensures concepts stick.
 
 ### Infrastructure changes
 - Vite: `host: true` for network access (test on phone via local IP)
-- Apollo Client: dynamic hostname (`window.location.hostname` instead of hardcoded localhost)
+- All client API URLs are relative (`/graphql`, `/api/...`) — works in both dev and production
+- Vite dev proxy: forwards `/graphql` and `/api` to `localhost:4000`
 - CORS: `app.use("/api", cors(...))` global middleware for all /api routes (fixes preflight OPTIONS)
-- CORS: dev mode allows all origins (`origin: true`), production locks to domain
+- CORS: dev mode allows all origins (`origin: true`), production locks to `https://birdlog.henlit.se`
 - Image proxy URLs: server returns raw Wikimedia URLs, client wraps with `proxyImageUrl()` helper
-- `proxyImageUrl()` utility in `packages/client/src/lib/utils.ts` — builds proxy URL using current hostname
+- `proxyImageUrl()` utility in `packages/client/src/lib/utils.ts` — builds relative proxy URL
 - Server `.env` loaded via `--env-file=.env` flag in tsx watch (no dotenv package needed)
 - Viewport: `user-scalable=no, maximum-scale=1.0` to prevent pinch zoom
 - Layout: `min-h-dvh` / `h-dvh` instead of `min-h-screen` / `h-screen` for mobile browser chrome
@@ -345,7 +347,7 @@ before proceeding. This reinforces learning and ensures concepts stick.
 - File input `accept` changed from `image/*` to `image/jpeg,image/png,image/webp,image/gif` — iOS auto-converts HEIC to JPEG
 
 ### TODO
-- Phase 6 quiz before moving to Phase 7
+- Phase 7: Notifications & Alerts (Web Push)
 
 ## Key Files (new)
 
@@ -363,6 +365,34 @@ before proceeding. This reinforces learning and ensures concepts stick.
 - `packages/client/src/components/ui/skeleton.tsx` — Skeleton loading component
 - `packages/client/src/utils/types.ts` — Shared TypeScript interfaces (Species, Sighting, MyLifeList)
 - `packages/client/src/lib/utils.ts` — cn() utility + proxyImageUrl() helper
+
+## Deployment
+
+### Production — TrueNAS SCALE (self-hosted)
+- Live at: `https://birdlog.henlit.se`
+- Host: TrueNAS SCALE ElectricEel-24.10.2.2 with static IP
+- Docker Compose: `docker-compose.prod.yml` with `--env-file .env.prod`
+- Single container (`birdlog-app`) serves both API and client build via Express
+- PostgreSQL container (`birdlog-db`) — plain Postgres 15 (PostGIS removed, not needed)
+- SSL: wildcard certificate for `*.henlit.se` via Nginx Proxy Manager
+- Reverse proxy: Nginx Proxy Manager → `birdlog-app:4000`
+- Auto-deploy: cron job on TrueNAS checks for new commits every 5 minutes, pulls and rebuilds
+
+### Docker setup
+- `Dockerfile` — multi-stage build (deps → build client → build server → slim production image)
+- `docker-compose.prod.yml` — Postgres + app, secrets via env vars (`DB_PASSWORD`, `JWT_SECRET`, `OPENAI_API_KEY`, `ARTDATABANKEN_API_KEY`)
+- `.env.prod` — production secrets (not in git)
+- `.env.prod.example` — template for production secrets
+- `.dockerignore` — excludes node_modules, dist, .git, .env
+- Production Express serves Vite build output as static files + catch-all for SPA routing
+- CMD runs `prisma migrate deploy` before starting server (auto-applies new migrations)
+- Seed command: `docker exec -it birdlog-app npx prisma db seed --schema=packages/server/prisma/schema.prisma`
+
+### Dev vs Production differences
+- Dev: Vite dev server on :5173 proxies `/graphql` and `/api` to Express on :4000
+- Production: Express serves everything on :4000 (static files + API + GraphQL)
+- Dev: `docker-compose.yml` with local Postgres, `npm run dev`
+- Production: `docker-compose.prod.yml` with env vars, Docker build
 
 ## Future TODO
 

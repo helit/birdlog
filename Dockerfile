@@ -28,7 +28,7 @@ RUN apt-get update -y && apt-get install -y openssl && rm -rf /var/lib/apt/lists
 
 COPY package*.json ./
 COPY packages/server/package*.json ./packages/server/
-RUN npm ci --workspace=packages/server --omit=dev
+RUN npm ci --workspace=packages/server --omit=dev && npm install tsx
 
 # Copy Prisma schema + migrations (for migrate deploy)
 COPY packages/server/prisma/ ./packages/server/prisma/
