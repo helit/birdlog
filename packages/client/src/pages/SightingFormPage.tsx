@@ -60,8 +60,8 @@ const SightingFormPage = () => {
   useEffect(() => {
     if (!sighting) {
       navigator.geolocation.getCurrentPosition((pos) => {
-        setLatitude(pos.coords.latitude);
-        setLongitude(pos.coords.longitude);
+        setLatitude(Number(pos.coords.latitude.toFixed(4)));
+        setLongitude(Number(pos.coords.longitude.toFixed(4)));
       });
     }
   }, []);
@@ -108,13 +108,26 @@ const SightingFormPage = () => {
 
         <div className="flex flex-col gap-1">
           <label className="text-sm font-medium">Plats</label>
-          {latitude ? (
-            <p className="text-xs text-muted-foreground">
-              {latitude.toFixed(4)}, {longitude?.toFixed(4)}
-            </p>
-          ) : (
-            <p className="text-xs text-muted-foreground">Hämtar position...</p>
-          )}
+          <div className="flex gap-2">
+            <Input
+              type="number"
+              step="0.0001"
+              placeholder="Latitud"
+              value={latitude ?? ""}
+              onChange={(e) =>
+                setLatitude(e.target.value ? Number(Number(e.target.value).toFixed(4)) : null)
+              }
+            />
+            <Input
+              type="number"
+              step="0.0001"
+              placeholder="Longitud"
+              value={longitude ?? ""}
+              onChange={(e) =>
+                setLongitude(e.target.value ? Number(Number(e.target.value).toFixed(4)) : null)
+              }
+            />
+          </div>
           <Input
             placeholder="Platsnamn (valfritt)"
             value={location}
@@ -125,8 +138,8 @@ const SightingFormPage = () => {
             size="sm"
             onClick={() => {
               navigator.geolocation.getCurrentPosition((pos) => {
-                setLatitude(pos.coords.latitude);
-                setLongitude(pos.coords.longitude);
+                setLatitude(Number(pos.coords.latitude.toFixed(4)));
+                setLongitude(Number(pos.coords.longitude.toFixed(4)));
               });
             }}
           >

@@ -5,7 +5,8 @@ import { Sighting } from "@/utils/types";
 import { useMutation } from "@apollo/client";
 import { format } from "date-fns";
 import { sv } from "date-fns/locale";
-import { ArrowLeftIcon, MapPinIcon, PencilIcon, TrashIcon } from "lucide-react";
+import { proxyImageUrl } from "@/lib/utils";
+import { ArrowLeftIcon, BirdIcon, MapPinIcon, PencilIcon, TrashIcon } from "lucide-react";
 import { useLocation, useNavigate } from "react-router-dom";
 import { toast } from "sonner";
 import { Spinner } from "@/components/ui/spinner";
@@ -42,9 +43,31 @@ const SightingDetailPage = () => {
         Tillbaka
       </button>
 
-      <div>
-        <h1 className="text-2xl font-bold">{sighting.species.swedishName}</h1>
-        <p className="text-sm text-muted-foreground italic">{sighting.species.scientificName}</p>
+      <div className="flex items-center gap-4">
+        <div className="size-20 flex-shrink-0 overflow-hidden rounded-xl bg-primary/10">
+          {sighting.species.imageUrl ? (
+            <img
+              src={proxyImageUrl(sighting.species.imageUrl) ?? undefined}
+              alt={sighting.species.swedishName}
+              className="size-full object-cover"
+              onError={(e) => {
+                e.currentTarget.style.display = "none";
+                e.currentTarget.nextElementSibling?.classList.remove("hidden");
+              }}
+            />
+          ) : null}
+          <div
+            className={`${sighting.species.imageUrl ? "hidden" : ""} flex size-full items-center justify-center`}
+          >
+            <BirdIcon className="size-8 text-primary/40" />
+          </div>
+        </div>
+        <div>
+          <h1 className="text-2xl font-bold">{sighting.species.swedishName}</h1>
+          <p className="text-sm italic text-muted-foreground">
+            {sighting.species.scientificName}
+          </p>
+        </div>
       </div>
 
       <div className="flex flex-col gap-3 rounded-lg bg-card p-4 shadow-sm">

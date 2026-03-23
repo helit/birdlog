@@ -1,7 +1,8 @@
 import { MyLifeList, SightingBySpecies } from "@/utils/types";
 import { format } from "date-fns";
 import { sv } from "date-fns/locale";
-import { ArrowLeftIcon, MapPinIcon } from "lucide-react";
+import { proxyImageUrl } from "@/lib/utils";
+import { ArrowLeftIcon, BirdIcon, MapPinIcon } from "lucide-react";
 import { useLocation, useNavigate } from "react-router-dom";
 import { Button } from "@/components/ui/button";
 import { useQuery } from "@apollo/client";
@@ -47,9 +48,31 @@ const LifeListDetailPage = () => {
         Tillbaka
       </button>
 
-      <div>
-        <h1 className="text-2xl font-bold">{lifeList.species.swedishName}</h1>
-        <p className="text-sm text-muted-foreground italic">{lifeList.species.scientificName}</p>
+      <div className="flex items-center gap-4">
+        <div className="size-20 flex-shrink-0 overflow-hidden rounded-xl bg-primary/10">
+          {lifeList.species.imageUrl ? (
+            <img
+              src={proxyImageUrl(lifeList.species.imageUrl) ?? undefined}
+              alt={lifeList.species.swedishName}
+              className="size-full object-cover"
+              onError={(e) => {
+                e.currentTarget.style.display = "none";
+                e.currentTarget.nextElementSibling?.classList.remove("hidden");
+              }}
+            />
+          ) : null}
+          <div
+            className={`${lifeList.species.imageUrl ? "hidden" : ""} flex size-full items-center justify-center`}
+          >
+            <BirdIcon className="size-8 text-primary/40" />
+          </div>
+        </div>
+        <div>
+          <h1 className="text-2xl font-bold">{lifeList.species.swedishName}</h1>
+          <p className="text-sm italic text-muted-foreground">
+            {lifeList.species.scientificName}
+          </p>
+        </div>
       </div>
 
       <div className="flex flex-col gap-3 rounded-lg bg-card p-4 shadow-sm">

@@ -36,13 +36,13 @@ const SightingsListPage = () => {
   const groups = groupByMonth(sightings);
 
   return (
-    <div className="flex flex-col gap-6">
+    <div className="flex flex-col gap-4">
       {groups.map((group) => (
         <section key={group.label}>
-          <h2 className="mb-2 text-sm font-semibold capitalize text-muted-foreground">
+          <h2 className="mb-2 text-sm font-semibold uppercase tracking-wide text-muted-foreground">
             {group.label}
           </h2>
-          <div className="flex flex-col gap-2">
+          <div className="overflow-hidden rounded-xl bg-card shadow-sm">
             {group.sightings.map((sighting) => (
               <SightingCard key={sighting.id} sighting={sighting} />
             ))}

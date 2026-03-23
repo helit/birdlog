@@ -12,7 +12,7 @@ const LifeListCard = ({ lifeList }: LifeListCardProps) => {
 
   return (
     <button
-      className="flex w-full items-center gap-3 rounded-lg bg-card p-3 text-left shadow-sm transition-colors hover:bg-accent"
+      className="flex w-full items-center gap-3 border-b border-border/50 px-3 py-2 text-left last:border-b-0"
       onClick={() => navigate(`/life-list/${lifeList.species.id}`, { state: { lifeList } })}
     >
       <div className="size-12 flex-shrink-0 overflow-hidden rounded-lg bg-primary/10">
@@ -35,13 +35,14 @@ const LifeListCard = ({ lifeList }: LifeListCardProps) => {
         </div>
       </div>
       <div className="min-w-0 flex-1">
-        <div className="font-medium">{lifeList.species.swedishName}</div>
-        <div className="text-xs italic text-muted-foreground">
+        <p className="truncate font-medium leading-tight">{lifeList.species.swedishName}</p>
+        <p className="truncate text-xs italic text-muted-foreground">
           {lifeList.species.scientificName}
-        </div>
-        <div className="mt-1 flex items-center gap-2 text-xs text-muted-foreground">
-          <span>{lifeList.sightingCount} observationer</span>
-        </div>
+        </p>
+      </div>
+      <div className="flex-shrink-0 text-right">
+        <p className="text-sm font-semibold text-primary">{lifeList.sightingCount}</p>
+        <p className="text-[10px] text-muted-foreground">obs</p>
       </div>
     </button>
   );
