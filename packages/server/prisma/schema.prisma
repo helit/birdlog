@@ -22,7 +22,7 @@ model User {
 model Species {
   id             String     @id @default(cuid())
   swedishName    String
-  scientificName String
+  scientificName String     @unique
   englishName    String?
   family         String?
   description    String?

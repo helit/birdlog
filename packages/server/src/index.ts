@@ -5,7 +5,11 @@ import cors from "cors";
 import { typeDefs } from "./schema/typeDefs.js";
 import { resolvers } from "./schema/resolvers.js";
 import { getContextUser, GraphQLContext } from "./middleware/auth.js";
-import { identifyBird } from "./services/claude.js";
+import { identifyBird } from "./services/openai.js";
+import { getWikimediaImage } from "./services/artdatabanken.js";
+import { PrismaClient } from "@prisma/client";
+
+const prisma = new PrismaClient();
 
 const app = express();
 const port = process.env.PORT || 4000;
@@ -89,7 +93,33 @@ app.post(
       console.log(`Identifying bird — mediaType: ${mediaType}, base64 length: ${base64Data.length}`);
       const results = await identifyBird(base64Data, mediaType);
       console.log("Identification results:", JSON.stringify(results, null, 2));
-      res.json({ results });
+
+      // Enrich results: upsert species so every identified bird gets a DB record
+      const enriched = await Promise.all(
+        results.map(async (bird) => {
+          const imageUrl = await getWikimediaImage(bird.scientificName);
+
+          const species = await prisma.species.upsert({
+            where: { scientificName: bird.scientificName },
+            update: {
+              imageUrl: imageUrl ?? undefined,
+            },
+            create: {
+              swedishName: bird.swedishName,
+              scientificName: bird.scientificName,
+              imageUrl,
+            },
+          });
+
+          return {
+            ...bird,
+            speciesId: species.id,
+            imageUrl: species.imageUrl ?? imageUrl,
+          };
+        }),
+      );
+
+      res.json({ results: enriched });
     } catch (error) {
       console.error("Identification failed:", error);
       res.status(500).json({ error: "Identification failed" });

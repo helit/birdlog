@@ -1,7 +1,7 @@
 # BIRDLOG — Claude Project Context
 
-Last updated: 2026-03-19
-Current phase: Artdatabanken API integration + AI identification [IN PROGRESS]
+Last updated: 2026-03-23
+Current phase: AI identification — OpenAI API [IN PROGRESS]
 Phase 3 quiz: COMPLETED
 Phase 8 (PWA & offline): DEFERRED — will do last, if at all
 
@@ -36,8 +36,8 @@ npm run dev              # runs both client + server from root
 2. Authentication                            [DONE]
 3. Sighting log — CRUD, geolocation, life list [DONE]
 4. Design & styling pass                     [DONE]
-5. Artdatabanken API integration             [IN PROGRESS]
-6. AI bird identification (Claude API)       [IN PROGRESS]
+5. Artdatabanken API integration             [DONE]
+6. AI bird identification (OpenAI API)       [IN PROGRESS]
 7. Notifications & alerts (Web Push)
 8. PWA & offline basics (deferred — do last if needed)
 9. Polish & portfolio prep
@@ -266,19 +266,23 @@ before proceeding. This reinforces learning and ensures concepts stick.
 
 ## Phase 6 Progress — AI Bird Identification
 
-### Photo Identification [IN PROGRESS — blocked on API credits]
-- Full pipeline built and working end-to-end, blocked only on Anthropic API credits
+### Photo Identification [IN PROGRESS — switching to OpenAI]
+- Full pipeline built and working end-to-end
 - IdentifyPage: camera button triggers hidden `<input type="file" accept="image/*">`, uses FileReader to convert to data URL, navigates to `/identify/photo` with imageData in route state
 - PhotoIdentifyPage (`/identify/photo`): reads imageData from `useLocation().state`, shows preview, "Byt foto" and "Identifiera" buttons
 - Client sends imageData (data URL) via `fetch POST` to `/api/identify` REST endpoint
 - Server: `POST /api/identify` endpoint parses data URL → extracts base64 + mediaType → calls `identifyBird()`
-- Server: `packages/server/src/services/claude.ts` — Anthropic SDK, sends image to Claude Sonnet with structured prompt
-- Claude responds with JSON array of up to 3 bird candidates (swedishName, scientificName, confidence, description in Swedish)
+- AI responds with JSON array of up to 3 bird candidates (swedishName, scientificName, confidence, description in Swedish)
 - Results displayed as cards with confidence badges (color-coded: high=green, medium=amber, low=red)
 - Empty state if no bird found in image, error handling for API failures
 - `express.json({ limit: "10mb" })` on identify endpoint for large photo payloads
 
-### Infrastructure changes (this session)
+#### API provider history
+- Originally built with Anthropic Claude Sonnet — blocked on API credits
+- Tried Gemini 3.1 Pro (`@google/genai` SDK) — free tier has 0 quota for this model
+- **Next step: switch to OpenAI API** (need to install `openai` package, rewrite `gemini.ts` → `openai.ts`)
+
+### Infrastructure changes
 - Vite: `host: true` for network access (test on phone via local IP)
 - Apollo Client: dynamic hostname (`window.location.hostname` instead of hardcoded localhost)
 - CORS: `app.use("/api", cors(...))` global middleware for all /api routes (fixes preflight OPTIONS)
@@ -291,17 +295,26 @@ before proceeding. This reinforces learning and ensures concepts stick.
 - IdentifyPage: geolocation error handler (prevents infinite skeleton loading)
 - Species imageUrl DB cache: cleared localhost URLs, now caches raw Wikimedia URLs
 
+### Styling updates (2026-03-23)
+- Lists (sightings, life list) restyled to match "birds near you" pattern: grouped card with border-b separators, thumbnails, right-aligned metadata
+- SightingCard: added species image thumbnails, date/location moved to right side
+- LifeListCard: observation count on right side with "obs" label
+- Detail pages (SightingDetailPage, LifeListDetailPage): added 80px species image thumbnails
+- EmptyState: switched to shadcn Button component
+- SightingFormPage: lat/lng now editable number inputs (max 4 decimals)
+
 ### TODO
-- **Get Anthropic API credits** (ask employer for workspace invite, or buy $5 individual credits)
-- Test photo identification end-to-end once credits are available
+- **Switch to OpenAI API** — install `openai` package, create `openai.ts` service, update import in index.ts
+- Test photo identification end-to-end
 - Build guided identification page (`/identify/guided`)
-- Consider: link identification results to "create sighting" flow
+- Link identification results to "create sighting" flow
 
 ## Key Files (new)
 
 ### Server
 - `packages/server/src/services/artdatabanken.ts` — Artdatabanken + Wikimedia API service (getTopBirdTaxa, getTaxonName, getWikimediaImage)
-- `packages/server/src/services/claude.ts` — Claude Vision bird identification (identifyBird function, Anthropic SDK)
+- `packages/server/src/services/gemini.ts` — Gemini bird identification (identifyBird function, @google/genai SDK) — to be replaced with OpenAI
+- `packages/server/src/services/claude.ts` — [DEPRECATED] Original Anthropic Claude implementation
 - `packages/server/src/index.ts` — Express server with Apollo GraphQL + REST endpoints (`/api/image-proxy`, `/api/identify`)
 
 ### Client

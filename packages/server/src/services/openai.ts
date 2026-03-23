@@ -1,6 +1,6 @@
-import Anthropic from "@anthropic-ai/sdk";
+import OpenAI from "openai";
 
-const anthropic = new Anthropic();
+const client = new OpenAI({ apiKey: process.env.OPENAI_API_KEY });
 
 export interface BirdIdentification {
   swedishName: string;
@@ -13,19 +13,16 @@ export async function identifyBird(
   base64Data: string,
   mediaType: "image/jpeg" | "image/png" | "image/webp" | "image/gif",
 ): Promise<BirdIdentification[]> {
-  const response = await anthropic.messages.create({
-    model: "claude-sonnet-4-6-20250514",
-    max_tokens: 1024,
+  const response = await client.chat.completions.create({
+    model: "gpt-4o",
     messages: [
       {
         role: "user",
         content: [
           {
-            type: "image",
-            source: {
-              type: "base64",
-              media_type: mediaType,
-              data: base64Data,
+            type: "image_url",
+            image_url: {
+              url: `data:${mediaType};base64,${base64Data}`,
             },
           },
           {
@@ -50,13 +47,12 @@ If the image does not contain a bird, respond with an empty array: []`,
     ],
   });
 
-  const text =
-    response.content[0].type === "text" ? response.content[0].text : "";
+  const text = response.choices[0]?.message?.content ?? "";
 
   try {
     return JSON.parse(text) as BirdIdentification[];
   } catch {
-    console.error("Failed to parse Claude response:", text);
+    console.error("Failed to parse OpenAI response:", text);
     return [];
   }
 }

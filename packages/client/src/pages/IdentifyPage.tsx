@@ -76,6 +76,8 @@ const IdentifyPage = () => {
 
     const reader = new FileReader();
     reader.onload = () => {
+      // Reset after reading so the same file triggers onChange next time
+      if (fileInputRef.current) fileInputRef.current.value = "";
       navigate("/identify/photo", { state: { imageData: reader.result } });
     };
     reader.readAsDataURL(file);
@@ -215,7 +217,10 @@ const IdentifyPage = () => {
         </button>
         <button
           className="flex size-14 items-center justify-center rounded-full bg-card shadow-sm active:scale-95"
-          onClick={() => fileInputRef.current?.click()}
+          onClick={() => {
+            if (fileInputRef.current) fileInputRef.current.value = "";
+            fileInputRef.current?.click();
+          }}
         >
           <CameraIcon className="size-6 text-primary" />
         </button>

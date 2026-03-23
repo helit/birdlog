@@ -24,8 +24,9 @@ const SightingFormPage = () => {
   const { id } = useParams();
   const { state } = useLocation();
   const sighting = state?.sighting;
+  const prefill = state?.prefill;
 
-  const [speciesId, setSpeciesId] = useState(sighting?.species.id ?? "");
+  const [speciesId, setSpeciesId] = useState(sighting?.species.id ?? prefill?.speciesId ?? "");
   const [latitude, setLatitude] = useState<number | null>(sighting?.latitude ?? null);
   const [longitude, setLongitude] = useState<number | null>(sighting?.longitude ?? null);
   const [location, setLocation] = useState(sighting?.location ?? "");
@@ -34,7 +35,7 @@ const SightingFormPage = () => {
     sighting?.date.split("T")[0] ?? new Date().toISOString().split("T")[0],
   );
   const [selectedSpeciesName, setSelectedSpeciesName] = useState(
-    sighting?.species.swedishName ?? "",
+    sighting?.species.swedishName ?? prefill?.swedishName ?? "",
   );
 
   const [executeSearch, { data }] = useLazyQuery(SEARCH_SPECIES);
