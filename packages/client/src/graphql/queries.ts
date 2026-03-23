@@ -93,6 +93,20 @@ export const MY_LIFE_LIST = gql`
   }
 `;
 
+export const SPECIES_BY_SCIENTIFIC_NAME = gql`
+  query SpeciesByScientificName($scientificName: String!, $vernacularName: String) {
+    speciesByScientificName(scientificName: $scientificName, vernacularName: $vernacularName) {
+      id
+      swedishName
+      scientificName
+      englishName
+      family
+      description
+      imageUrl
+    }
+  }
+`;
+
 export const NEARBY_BIRDS = gql`
   query NearbyBirds($latitude: Float!, $longitude: Float!) {
     nearbyBirds(latitude: $latitude, longitude: $longitude) {

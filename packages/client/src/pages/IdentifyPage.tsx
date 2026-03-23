@@ -1,6 +1,6 @@
 import { Skeleton } from "@/components/ui/skeleton";
 import { NEARBY_BIRDS } from "@/graphql/queries";
-import { proxyImageUrl } from "@/lib/utils";
+import { proxyImageUrl, toSpeciesSlug } from "@/lib/utils";
 import { useQuery } from "@apollo/client";
 import { BirdIcon, CameraIcon, PlusIcon, WandSparklesIcon } from "lucide-react";
 import { ChangeEvent, useEffect, useState } from "react";
@@ -101,7 +101,14 @@ const IdentifyPage = () => {
         (() => {
           const isRare = !!rareBird;
           return (
-            <div className="relative overflow-hidden rounded-xl shadow-sm">
+            <button
+              className="w-full overflow-hidden rounded-xl shadow-sm text-left active:scale-[0.98] transition-transform"
+              onClick={() =>
+                navigate(`/bird/${toSpeciesSlug(hero.scientificName)}`, {
+                  state: { vernacularName: hero.vernacularName },
+                })
+              }
+            >
               <div className={`flex h-32 items-center ${isRare ? "bg-amber-50" : "bg-primary/5"}`}>
                 {hero.imageUrl ? (
                   <img
@@ -132,7 +139,7 @@ const IdentifyPage = () => {
                   </p>
                 </div>
               </div>
-            </div>
+            </button>
           );
         })()
       )}
@@ -152,40 +159,46 @@ const IdentifyPage = () => {
           ) : (
             <ul>
               {birds.map((bird) => (
-                <li
-                  key={bird.scientificName}
-                  className="flex items-center gap-3 border-b border-border/50 px-3 py-2 last:border-b-0"
-                >
-                  <div className="size-12 flex-shrink-0 overflow-hidden rounded-lg bg-primary/10">
-                    {bird.imageUrl ? (
-                      <img
-                        src={proxyImageUrl(bird.imageUrl) ?? undefined}
-                        alt={bird.vernacularName}
-                        className="size-full object-cover"
-                        onError={(e) => {
-                          e.currentTarget.style.display = "none";
-                          e.currentTarget.nextElementSibling?.classList.remove("hidden");
-                        }}
-                      />
-                    ) : null}
-                    <div
-                      className={`${bird.imageUrl ? "hidden" : ""} flex size-full items-center justify-center`}
-                    >
-                      <BirdIcon className="size-5 text-primary/40" />
+                <li key={bird.scientificName}>
+                  <button
+                    className="flex w-full items-center gap-3 border-b border-border/50 px-3 py-2 text-left last:border-b-0 active:bg-muted/50"
+                    onClick={() =>
+                      navigate(`/bird/${toSpeciesSlug(bird.scientificName)}`, {
+                        state: { vernacularName: bird.vernacularName },
+                      })
+                    }
+                  >
+                    <div className="size-12 flex-shrink-0 overflow-hidden rounded-lg bg-primary/10">
+                      {bird.imageUrl ? (
+                        <img
+                          src={proxyImageUrl(bird.imageUrl) ?? undefined}
+                          alt={bird.vernacularName}
+                          className="size-full object-cover"
+                          onError={(e) => {
+                            e.currentTarget.style.display = "none";
+                            e.currentTarget.nextElementSibling?.classList.remove("hidden");
+                          }}
+                        />
+                      ) : null}
+                      <div
+                        className={`${bird.imageUrl ? "hidden" : ""} flex size-full items-center justify-center`}
+                      >
+                        <BirdIcon className="size-5 text-primary/40" />
+                      </div>
                     </div>
-                  </div>
-                  <div className="min-w-0 flex-1">
-                    <p className="truncate font-medium capitalize leading-tight">
-                      {bird.vernacularName}
-                    </p>
-                    <p className="truncate text-xs italic text-muted-foreground">
-                      {bird.scientificName}
-                    </p>
-                  </div>
-                  <div className="flex-shrink-0 text-right">
-                    <p className="text-sm font-semibold text-primary">{bird.observationCount}</p>
-                    <p className="text-[10px] text-muted-foreground">obs</p>
-                  </div>
+                    <div className="min-w-0 flex-1">
+                      <p className="truncate font-medium capitalize leading-tight">
+                        {bird.vernacularName}
+                      </p>
+                      <p className="truncate text-xs italic text-muted-foreground">
+                        {bird.scientificName}
+                      </p>
+                    </div>
+                    <div className="flex-shrink-0 text-right">
+                      <p className="text-sm font-semibold text-primary">{bird.observationCount}</p>
+                      <p className="text-[10px] text-muted-foreground">obs</p>
+                    </div>
+                  </button>
                 </li>
               ))}
             </ul>

@@ -62,6 +62,7 @@ export const typeDefs = gql`
     mySightingsBySpecies(speciesId: ID!): [Sighting!]!
     myLifeList: [LifeListEntry!]!
     nearbyBirds(latitude: Float!, longitude: Float!): NearbyBirdsResult!
+    speciesByScientificName(scientificName: String!, vernacularName: String): Species
   }
 
   type Mutation {

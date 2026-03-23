@@ -186,6 +186,26 @@ export const resolvers = {
       return { common, rare };
     },
 
+    speciesByScientificName: async (
+      _: unknown,
+      { scientificName, vernacularName }: { scientificName: string; vernacularName?: string },
+    ) => {
+      // Try to find existing species (case-insensitive)
+      const existing = await prisma.species.findFirst({
+        where: { scientificName: { equals: scientificName, mode: "insensitive" } },
+      });
+      if (existing) return existing;
+
+      // Upsert if we have a vernacular name (e.g. from nearby birds)
+      if (vernacularName) {
+        return await prisma.species.create({
+          data: { scientificName, swedishName: vernacularName },
+        });
+      }
+
+      return null;
+    },
+
     myLifeList: async (_: unknown, __: unknown, context: GraphQLContext) => {
       const user = requireAuth(context.user);
 

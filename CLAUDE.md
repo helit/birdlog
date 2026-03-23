@@ -1,6 +1,6 @@
 # BIRDLOG — Claude Project Context
 
-Last updated: 2026-03-23
+Last updated: 2026-03-24
 Current phase: Phase 6 DONE, Phase 7 next (Notifications & Alerts)
 Phase 3 quiz: COMPLETED
 Phase 6 quiz: COMPLETED (5/8)
@@ -164,10 +164,11 @@ before proceeding. This reinforces learning and ensures concepts stick.
 - `packages/client/src/context/AuthContext.tsx` — AuthProvider, useAuth hook
 - `packages/client/src/pages/LoginPage.tsx` — Login form (shadcn Card + Input)
 - `packages/client/src/pages/RegisterPage.tsx` — Register form (shadcn Card + Input)
-- `packages/client/src/pages/SightingFormPage.tsx` — Create/edit sighting form (species combobox, date, geolocation, notes, useParams for edit mode)
+- `packages/client/src/pages/SightingFormPage.tsx` — Create/edit sighting form (inline species search, date, geolocation, map picker, notes, useParams for edit mode)
+- `packages/client/src/pages/PickLocationPage.tsx` — Full-screen map location picker (pan to position, fixed center marker)
 - `packages/client/src/pages/SightingsListPage.tsx` — Sightings list grouped by month (useQuery MY_SIGHTINGS, renders SightingCards)
 - `packages/client/src/pages/SightingDetailPage.tsx` — Sighting detail view (all info, map placeholder, edit/delete actions)
-- `packages/client/src/pages/LifeListDetailPage.tsx` — Life list species detail (stats, map placeholder, sightings placeholder)
+- `packages/client/src/pages/LifeListDetailPage.tsx` — Life list species detail (Wikipedia description, stats, map, sightings list)
 - `packages/client/src/components/SightingCard.tsx` — Compact clickable sighting row (navigates to /sighting/:id)
 - `packages/client/src/components/Header.tsx` — Sticky top bar with app title and logout button
 - `packages/client/src/components/BottomNav.tsx` — Fixed bottom tab navigation (Observationer, Ny, Fågellista)
@@ -346,13 +347,26 @@ before proceeding. This reinforces learning and ensures concepts stick.
 - "Ny identifiering" and "Försök igen" also open file picker directly
 - File input `accept` changed from `image/*` to `image/jpeg,image/png,image/webp,image/gif` — iOS auto-converts HEIC to JPEG
 
+### Bug fixes & improvements (2026-03-24)
+- Species picker: replaced Popover+Command (cmdk) with inline Input + dropdown list — fixes iOS keyboard not opening on tap
+- Map location picker: new PickLocationPage (`/pick-location`) — full-screen map with fixed center marker (pan to position), "Bekräfta position" button
+  - Custom green SVG marker overlay with z-[1000] to stay above Leaflet tiles
+  - Form state preserved via route state round-trip (form → map → form)
+  - SightingFormPage: "Välj på karta" button alongside "Uppdatera position"
+- SightingMap: replaced default Leaflet marker with custom green SVG pin (same as pick-location)
+- Button sizes increased globally for better mobile tap targets (default h-8→h-10, sm h-7→h-9, lg h-9→h-11)
+- Wikipedia summaries: `getWikipediaSummary()` in artdatabanken.ts — fetches from sv.wikipedia.org (fallback en), cached in Species.description via field resolver
+- LifeListDetailPage: shows species description from Wikipedia below header
+- Dockerfile: added `npm install tsx` to production image so `prisma db seed` works in container
+- Production seed: ran seed on TrueNAS (31 → 260 species)
+
 ### TODO
 - Phase 7: Notifications & Alerts (Web Push)
 
 ## Key Files (new)
 
 ### Server
-- `packages/server/src/services/artdatabanken.ts` — Artdatabanken + Wikimedia API service (getTopBirdTaxa, getTaxonName, getWikimediaImage)
+- `packages/server/src/services/artdatabanken.ts` — Artdatabanken + Wikimedia API service (getTopBirdTaxa, getTaxonName, getWikimediaImage, getWikipediaSummary)
 - `packages/server/src/services/openai.ts` — OpenAI GPT-4o bird identification (identifyBird, identifyBirdFromDescription, BirdIdentification, GuidedIdentificationResult)
 - `packages/server/src/index.ts` — Express server with Apollo GraphQL + REST endpoints (`/api/image-proxy`, `/api/identify`, `/api/identify/guided` with species upsert)
 - `packages/server/prisma/seed.ts` — ~250 Swedish bird species seed (upsert-based, safe to re-run)
