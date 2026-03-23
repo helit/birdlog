@@ -4,7 +4,6 @@ WORKDIR /app
 COPY package*.json ./
 COPY packages/client/package*.json ./packages/client/
 COPY packages/server/package*.json ./packages/server/
-COPY packages/shared/package*.json ./packages/shared/ 2>/dev/null || true
 RUN npm ci
 
 # Stage 2: Build client
