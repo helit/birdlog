@@ -6,6 +6,7 @@ import {
   getTopBirdTaxa,
   getTaxonName,
   getWikimediaImage,
+  getWikipediaSummary,
 } from "../services/artdatabanken.js";
 
 const prisma = new PrismaClient();
@@ -42,6 +43,18 @@ interface UpdateSightingArgs {
 
 export const resolvers = {
   Species: {
+    description: async (species: { id: string; scientificName: string; description: string | null }) => {
+      if (species.description) return species.description;
+
+      const summary = await getWikipediaSummary(species.scientificName);
+      if (!summary) return null;
+
+      prisma.species
+        .update({ where: { id: species.id }, data: { description: summary } })
+        .catch(() => {});
+
+      return summary;
+    },
     imageUrl: async (species: { id: string; scientificName: string; imageUrl: string | null }) => {
       // Return cached URL if already stored
       if (species.imageUrl) return species.imageUrl;

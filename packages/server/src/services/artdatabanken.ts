@@ -102,6 +102,25 @@ export async function getTaxonName(
   };
 }
 
+export async function getWikipediaSummary(
+  scientificName: string,
+): Promise<string | null> {
+  // Try Swedish Wikipedia first, fall back to English
+  for (const lang of ["sv", "en"]) {
+    const slug = scientificName.replace(/ /g, "_");
+    const res = await fetch(
+      `https://${lang}.wikipedia.org/api/rest_v1/page/summary/${slug}`,
+      { headers: { "User-Agent": "BirdLog/1.0 (henrik@henlit.se)" } },
+    );
+
+    if (!res.ok) continue;
+
+    const data = await res.json();
+    if (data.extract) return data.extract;
+  }
+  return null;
+}
+
 export async function getWikimediaImage(
   scientificName: string,
   widthPx = 200,

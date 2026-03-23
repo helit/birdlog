@@ -75,6 +75,12 @@ const LifeListDetailPage = () => {
         </div>
       </div>
 
+      {lifeList.species.description && (
+        <p className="text-sm leading-relaxed text-muted-foreground">
+          {lifeList.species.description}
+        </p>
+      )}
+
       <div className="flex flex-col gap-3 rounded-lg bg-card p-4 shadow-sm">
         <div className="flex items-center justify-between">
           <span className="text-sm text-muted-foreground">Antal observationer</span>
