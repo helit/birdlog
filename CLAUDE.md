@@ -360,8 +360,19 @@ before proceeding. This reinforces learning and ensures concepts stick.
 - Dockerfile: added `npm install tsx` to production image so `prisma db seed` works in container
 - Production seed: ran seed on TrueNAS (31 → 260 species)
 
+### Bird Info Page [DONE]
+- BirdInfoPage (`/bird/:scientificName`) — general-purpose species info page
+- Shows: image, Swedish + scientific name, Wikipedia description, family
+- "Spara som observation" button → navigates to `/new` with species pre-filled
+- URL uses slugified scientific name (lowercase, hyphens): `/bird/alauda-arvensis`
+- Slug helpers: `toSpeciesSlug()` / `fromSpeciesSlug()` in `utils.ts`
+- Server: `speciesByScientificName` query — case-insensitive lookup, upserts if species not in DB (using vernacularName from nearby birds)
+- Nearby birds (hero + list) on IdentifyPage are now tappable → navigate to BirdInfoPage
+- Future: will become the basis for a "discover birds" / dictionary feature with search
+
 ### TODO
 - Phase 7: Notifications & Alerts (Web Push)
+- Bird discovery/dictionary feature: search for any bird and see info (builds on BirdInfoPage)
 
 ## Key Files (new)
 
@@ -372,13 +383,14 @@ before proceeding. This reinforces learning and ensures concepts stick.
 - `packages/server/prisma/seed.ts` — ~250 Swedish bird species seed (upsert-based, safe to re-run)
 
 ### Client
-- `packages/client/src/pages/IdentifyPage.tsx` — Landing page with nearby birds (hero + list) + action buttons + hidden file input for photo capture
+- `packages/client/src/pages/IdentifyPage.tsx` — Landing page with nearby birds (tappable hero + list) + action buttons + hidden file input for photo capture
+- `packages/client/src/pages/BirdInfoPage.tsx` — Species info page (image, description, family, "Spara som observation" button)
 - `packages/client/src/pages/PhotoIdentifyPage.tsx` — Photo identification page (photo overlay with top result, secondary results, in-page file picker for new photo)
 - `packages/client/src/pages/GuidedIdentifyPage.tsx` — Guided identification wizard (4-step: size, colors, habitat, notes → AI results with refinement tips)
 - `packages/client/src/components/BottomNav.tsx` — Updated: Identifiera, Observationer, Fågellista
 - `packages/client/src/components/ui/skeleton.tsx` — Skeleton loading component
 - `packages/client/src/utils/types.ts` — Shared TypeScript interfaces (Species, Sighting, MyLifeList)
-- `packages/client/src/lib/utils.ts` — cn() utility + proxyImageUrl() helper
+- `packages/client/src/lib/utils.ts` — cn() utility, proxyImageUrl(), toSpeciesSlug(), fromSpeciesSlug()
 
 ## Deployment
 
