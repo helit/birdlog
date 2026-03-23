@@ -8,7 +8,7 @@ import { AuthProvider } from "./context/AuthContext.js";
 import { BrowserRouter } from "react-router-dom";
 
 const httpLink = createHttpLink({
-  uri: `http://${window.location.hostname}:4000/graphql`,
+  uri: "/graphql",
 });
 
 const authLink = setContext((_, { headers }) => {

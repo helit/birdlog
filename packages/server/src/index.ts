@@ -2,10 +2,12 @@ import { ApolloServer } from "@apollo/server";
 import { expressMiddleware } from "@apollo/server/express4";
 import express from "express";
 import cors from "cors";
+import path from "path";
+import { fileURLToPath } from "url";
 import { typeDefs } from "./schema/typeDefs.js";
 import { resolvers } from "./schema/resolvers.js";
 import { getContextUser, GraphQLContext } from "./middleware/auth.js";
-import { identifyBird } from "./services/openai.js";
+import { identifyBird, identifyBirdFromDescription } from "./services/openai.js";
 import { getWikimediaImage } from "./services/artdatabanken.js";
 import { PrismaClient } from "@prisma/client";
 
@@ -72,7 +74,11 @@ app.post(
   "/api/identify",
   express.json({ limit: "10mb" }),
   async (req, res) => {
-    const { imageData } = req.body as { imageData: string };
+    const { imageData, latitude, longitude } = req.body as {
+      imageData: string;
+      latitude?: number;
+      longitude?: number;
+    };
 
     if (!imageData || !imageData.startsWith("data:image/")) {
       res.status(400).json({ error: "Invalid image data" });
@@ -91,7 +97,8 @@ app.post(
 
     try {
       console.log(`Identifying bird — mediaType: ${mediaType}, base64 length: ${base64Data.length}`);
-      const results = await identifyBird(base64Data, mediaType);
+      const month = new Date().getMonth() + 1;
+      const results = await identifyBird(base64Data, mediaType, { month, latitude, longitude });
       console.log("Identification results:", JSON.stringify(results, null, 2));
 
       // Enrich results: upsert species so every identified bird gets a DB record
@@ -126,6 +133,72 @@ app.post(
     }
   },
 );
+
+app.post(
+  "/api/identify/guided",
+  express.json(),
+  async (req, res) => {
+    const { size, colors, habitat, notes, latitude, longitude } = req.body as {
+      size: string;
+      colors: string[];
+      habitat: string;
+      notes?: string;
+      latitude?: number;
+      longitude?: number;
+    };
+
+    if (!size || !colors?.length || !habitat) {
+      res.status(400).json({ error: "Missing required fields: size, colors, habitat" });
+      return;
+    }
+
+    const month = new Date().getMonth() + 1;
+
+    try {
+      const { candidates, tip } = await identifyBirdFromDescription({ size, colors, habitat, notes, month, latitude, longitude });
+      console.log("Guided identification results:", JSON.stringify(candidates, null, 2));
+
+      const enriched = await Promise.all(
+        candidates.map(async (bird) => {
+          const imageUrl = await getWikimediaImage(bird.scientificName);
+
+          const species = await prisma.species.upsert({
+            where: { scientificName: bird.scientificName },
+            update: {
+              imageUrl: imageUrl ?? undefined,
+            },
+            create: {
+              swedishName: bird.swedishName,
+              scientificName: bird.scientificName,
+              imageUrl,
+            },
+          });
+
+          return {
+            ...bird,
+            speciesId: species.id,
+            imageUrl: species.imageUrl ?? imageUrl,
+          };
+        }),
+      );
+
+      res.json({ results: enriched, tip });
+    } catch (error) {
+      console.error("Guided identification failed:", error);
+      res.status(500).json({ error: "Identification failed" });
+    }
+  },
+);
+
+// In production, serve the client build
+if (process.env.NODE_ENV === "production") {
+  const __dirname = path.dirname(fileURLToPath(import.meta.url));
+  const clientDist = path.join(__dirname, "../../client/dist");
+  app.use(express.static(clientDist));
+  app.get("*", (_req, res) => {
+    res.sendFile(path.join(clientDist, "index.html"));
+  });
+}
 
 app.listen(port, () => {
   console.log(`🐦 BirdLog server running at http://localhost:${port}/graphql`);

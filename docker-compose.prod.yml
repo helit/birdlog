@@ -1,0 +1,31 @@
+services:
+  db:
+    image: postgres:15
+    container_name: birdlog-db
+    restart: unless-stopped
+    environment:
+      POSTGRES_USER: birdlog
+      POSTGRES_PASSWORD: ${DB_PASSWORD}
+      POSTGRES_DB: birdlog
+    volumes:
+      - birdlog-data:/var/lib/postgresql/data
+    # No ports exposed — only accessible from the app container
+
+  app:
+    build: .
+    container_name: birdlog-app
+    restart: unless-stopped
+    ports:
+      - "4000:4000"
+    environment:
+      DATABASE_URL: postgresql://birdlog:${DB_PASSWORD}@db:5432/birdlog?schema=public
+      JWT_SECRET: ${JWT_SECRET}
+      OPENAI_API_KEY: ${OPENAI_API_KEY}
+      ARTDATABANKEN_API_KEY: ${ARTDATABANKEN_API_KEY}
+      NODE_ENV: production
+      PORT: 4000
+    depends_on:
+      - db
+
+volumes:
+  birdlog-data:

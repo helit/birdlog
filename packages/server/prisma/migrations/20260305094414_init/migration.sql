@@ -1,6 +1,3 @@
--- CreateExtension
-CREATE EXTENSION IF NOT EXISTS "postgis";
-
 -- CreateTable
 CREATE TABLE "User" (
     "id" TEXT NOT NULL,

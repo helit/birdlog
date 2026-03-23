@@ -266,21 +266,40 @@ before proceeding. This reinforces learning and ensures concepts stick.
 
 ## Phase 6 Progress — AI Bird Identification
 
-### Photo Identification [IN PROGRESS — switching to OpenAI]
-- Full pipeline built and working end-to-end
+### Photo Identification [DONE]
+- Full pipeline working end-to-end with **OpenAI GPT-4o**
 - IdentifyPage: camera button triggers hidden `<input type="file" accept="image/*">`, uses FileReader to convert to data URL, navigates to `/identify/photo` with imageData in route state
+- File input reset: `e.target.value = ""` after read + on camera button click (fixes mobile re-selection bug)
 - PhotoIdentifyPage (`/identify/photo`): reads imageData from `useLocation().state`, shows preview, "Byt foto" and "Identifiera" buttons
 - Client sends imageData (data URL) via `fetch POST` to `/api/identify` REST endpoint
 - Server: `POST /api/identify` endpoint parses data URL → extracts base64 + mediaType → calls `identifyBird()`
 - AI responds with JSON array of up to 3 bird candidates (swedishName, scientificName, confidence, description in Swedish)
-- Results displayed as cards with confidence badges (color-coded: high=green, medium=amber, low=red)
-- Empty state if no bird found in image, error handling for API failures
 - `express.json({ limit: "10mb" })` on identify endpoint for large photo payloads
+
+#### Results UI
+- Top result overlays the user's photo with a gradient (`from-black/80 via-black/50 to-transparent`)
+- Shows species name, scientific name, confidence badge, description, and Wikipedia reference thumbnail
+- "Logga observation" button inside the overlay → navigates to `/new` with species pre-filled
+- Secondary results below under "Andra möjliga arter" heading — tappable cards with thumbnails
+- Empty state if no bird found, error handling for API failures
+
+#### Species upsert on identification
+- Server enriches each result: fetches Wikipedia image + upserts species into DB
+- Uses `prisma.species.upsert` on `scientificName` (unique constraint added via migration `add-unique-scientific-name`)
+- Every identified bird gets a DB record, so `speciesId` is always available for logging
+- Identification → sighting flow: tapping a result navigates to `/new` with `state.prefill.speciesId` + `state.prefill.swedishName`
+- SightingFormPage reads `prefill` from route state to pre-fill species picker
+
+#### Species seed expansion
+- Seed file (`prisma/seed.ts`) expanded from ~50 to ~250 Swedish bird species
+- Uses upsert (preserves existing sightings and AI-created species)
+- Covers: tits, thrushes, flycatchers, finches, sparrows, corvids, warblers, buntings, woodpeckers, raptors, falcons, owls, herons, ducks, swans, geese, gulls, terns, skuas, waders, rails, cranes, storks, pigeons, gamebirds, divers, grebes, cormorants, auks, and more
 
 #### API provider history
 - Originally built with Anthropic Claude Sonnet — blocked on API credits
-- Tried Gemini 3.1 Pro (`@google/genai` SDK) — free tier has 0 quota for this model
-- **Next step: switch to OpenAI API** (need to install `openai` package, rewrite `gemini.ts` → `openai.ts`)
+- Tried Gemini 3.1 Pro (`@google/genai` SDK) — free tier has 0 quota
+- **Switched to OpenAI GPT-4o** — `openai` package, `packages/server/src/services/openai.ts`
+- Old providers removed: `@anthropic-ai/sdk` and `@google/genai` uninstalled, `claude.ts` and `gemini.ts` deleted
 
 ### Infrastructure changes
 - Vite: `host: true` for network access (test on phone via local IP)
@@ -303,23 +322,43 @@ before proceeding. This reinforces learning and ensures concepts stick.
 - EmptyState: switched to shadcn Button component
 - SightingFormPage: lat/lng now editable number inputs (max 4 decimals)
 
+### Guided Identification [DONE]
+- GuidedIdentifyPage (`/identify/guided`): 4-step wizard (size → colors → habitat → notes) with progress bar
+- Step 0 — Size: 5 options (Mycket liten → Mycket stor) with reference birds, tapping advances
+- Step 1 — Colors: multi-select color chips (9 colors), "Nästa" button to advance
+- Step 2 — Habitat: 6 options with emoji icons (Skog, Trädgård/park, etc.), tapping advances
+- Step 3 — Notes + Submit: optional textarea for extra details, summary chips of selections, "Identifiera" button
+- Server: `POST /api/identify/guided` endpoint accepts `{ size, colors, habitat, notes?, latitude?, longitude? }`
+- Server: `identifyBirdFromDescription()` in openai.ts — text-only GPT-4o prompt, returns `GuidedIdentificationResult` with `candidates` + `tip`
+- Prompt engineering: AI acts as detective for casual birdwatchers — tolerates size misjudgment (±1 category), extra/missing colors, focuses on distinctive color+habitat combos
+- Season (month) automatically added server-side, geolocation passed from IdentifyPage via route state
+- Results: ranked card list with thumbnails, confidence badges, descriptions, "Logga observation" link per card
+- Refinement tips: when no high-confidence result, AI suggests a follow-up question (e.g. "Hade fågeln en böjd näbb?") shown as amber card — tapping returns to notes step to add detail and re-submit
+- Same enrichment pipeline as photo ID (Wikipedia image + species upsert)
+
+### Photo Identification improvements (2026-03-23)
+- Photo ID prompt enhanced: season/location context, field mark emphasis, name consistency check
+- `identifyBird()` now accepts optional `{ month, latitude, longitude }` parameter
+- IdentifyPage passes geolocation to both photo and guided ID via route state
+- "Byt foto" button opens file picker directly (no navigation back to home)
+- "Ny identifiering" and "Försök igen" also open file picker directly
+- File input `accept` changed from `image/*` to `image/jpeg,image/png,image/webp,image/gif` — iOS auto-converts HEIC to JPEG
+
 ### TODO
-- **Switch to OpenAI API** — install `openai` package, create `openai.ts` service, update import in index.ts
-- Test photo identification end-to-end
-- Build guided identification page (`/identify/guided`)
-- Link identification results to "create sighting" flow
+- Phase 6 quiz before moving to Phase 7
 
 ## Key Files (new)
 
 ### Server
 - `packages/server/src/services/artdatabanken.ts` — Artdatabanken + Wikimedia API service (getTopBirdTaxa, getTaxonName, getWikimediaImage)
-- `packages/server/src/services/gemini.ts` — Gemini bird identification (identifyBird function, @google/genai SDK) — to be replaced with OpenAI
-- `packages/server/src/services/claude.ts` — [DEPRECATED] Original Anthropic Claude implementation
-- `packages/server/src/index.ts` — Express server with Apollo GraphQL + REST endpoints (`/api/image-proxy`, `/api/identify`)
+- `packages/server/src/services/openai.ts` — OpenAI GPT-4o bird identification (identifyBird, identifyBirdFromDescription, BirdIdentification, GuidedIdentificationResult)
+- `packages/server/src/index.ts` — Express server with Apollo GraphQL + REST endpoints (`/api/image-proxy`, `/api/identify`, `/api/identify/guided` with species upsert)
+- `packages/server/prisma/seed.ts` — ~250 Swedish bird species seed (upsert-based, safe to re-run)
 
 ### Client
 - `packages/client/src/pages/IdentifyPage.tsx` — Landing page with nearby birds (hero + list) + action buttons + hidden file input for photo capture
-- `packages/client/src/pages/PhotoIdentifyPage.tsx` — Photo identification page (preview, identify button, results display)
+- `packages/client/src/pages/PhotoIdentifyPage.tsx` — Photo identification page (photo overlay with top result, secondary results, in-page file picker for new photo)
+- `packages/client/src/pages/GuidedIdentifyPage.tsx` — Guided identification wizard (4-step: size, colors, habitat, notes → AI results with refinement tips)
 - `packages/client/src/components/BottomNav.tsx` — Updated: Identifiera, Observationer, Fågellista
 - `packages/client/src/components/ui/skeleton.tsx` — Skeleton loading component
 - `packages/client/src/utils/types.ts` — Shared TypeScript interfaces (Species, Sighting, MyLifeList)

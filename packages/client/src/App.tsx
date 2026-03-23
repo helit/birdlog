@@ -12,6 +12,7 @@ import BottomNav from "./components/BottomNav.js";
 import Header from "./components/Header.js";
 import IdentifyPage from "./pages/IdentifyPage.js";
 import PhotoIdentifyPage from "./pages/PhotoIdentifyPage.js";
+import GuidedIdentifyPage from "./pages/GuidedIdentifyPage.js";
 
 function App() {
   const { user } = useAuth();
@@ -32,7 +33,7 @@ function App() {
           <div className="mx-auto w-full max-w-2xl px-4 pb-20">
             <Routes>
               <Route path="/" element={<IdentifyPage />} />
-              <Route path="/identify/guided" element={<div>Kommer snart</div>} />
+              <Route path="/identify/guided" element={<GuidedIdentifyPage />} />
               <Route path="/identify/photo" element={<PhotoIdentifyPage />} />
               <Route path="/sightings" element={<SightingsListPage />} />
               <Route path="/sighting/:id" element={<SightingDetailPage />} />

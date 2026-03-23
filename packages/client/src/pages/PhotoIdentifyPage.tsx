@@ -2,7 +2,7 @@ import { Button } from "@/components/ui/button";
 import { Spinner } from "@/components/ui/spinner";
 import { proxyImageUrl } from "@/lib/utils";
 import { BirdIcon, PlusIcon } from "lucide-react";
-import { useState } from "react";
+import { ChangeEvent, useRef, useState } from "react";
 import { Navigate, useLocation, useNavigate } from "react-router-dom";
 
 interface BirdIdentification {
@@ -18,10 +18,30 @@ const PhotoIdentifyPage = () => {
   const location = useLocation();
   const navigate = useNavigate();
   const imageData = location.state?.imageData as string | undefined;
+  const latitude = location.state?.latitude as number | undefined;
+  const longitude = location.state?.longitude as number | undefined;
 
+  const fileInputRef = useRef<HTMLInputElement>(null);
   const [loading, setLoading] = useState(false);
   const [results, setResults] = useState<BirdIdentification[] | null>(null);
   const [error, setError] = useState<string | null>(null);
+
+  const handleNewPhoto = (e: ChangeEvent<HTMLInputElement>) => {
+    const file = e.target.files?.[0];
+    if (!file) return;
+
+    const reader = new FileReader();
+    reader.onload = () => {
+      if (fileInputRef.current) fileInputRef.current.value = "";
+      navigate("/identify/photo", {
+        state: { imageData: reader.result, latitude, longitude },
+        replace: true,
+      });
+      setResults(null);
+      setError(null);
+    };
+    reader.readAsDataURL(file);
+  };
 
   if (!imageData) {
     return <Navigate to="/" replace />;
@@ -33,11 +53,11 @@ const PhotoIdentifyPage = () => {
 
     try {
       const response = await fetch(
-        `http://${window.location.hostname}:4000/api/identify`,
+        "/api/identify",
         {
           method: "POST",
           headers: { "Content-Type": "application/json" },
-          body: JSON.stringify({ imageData }),
+          body: JSON.stringify({ imageData, latitude, longitude }),
         },
       );
 
@@ -80,8 +100,21 @@ const PhotoIdentifyPage = () => {
     });
   };
 
+  const openFilePicker = () => {
+    if (fileInputRef.current) fileInputRef.current.value = "";
+    fileInputRef.current?.click();
+  };
+
   return (
     <div className="flex flex-col gap-4">
+      <input
+        ref={fileInputRef}
+        type="file"
+        accept="image/jpeg,image/png,image/webp,image/gif"
+        className="hidden"
+        onChange={handleNewPhoto}
+      />
+
       {/* Photo with top result overlay */}
       <div className="relative overflow-hidden rounded-xl shadow-sm">
         <img
@@ -137,7 +170,7 @@ const PhotoIdentifyPage = () => {
           <Button
             variant="outline"
             className="flex-1"
-            onClick={() => navigate("/")}
+            onClick={openFilePicker}
           >
             Byt foto
           </Button>
@@ -215,7 +248,7 @@ const PhotoIdentifyPage = () => {
       {results && results.length > 0 && (
         <Button
           variant="outline"
-          onClick={() => navigate("/")}
+          onClick={openFilePicker}
         >
           Ny identifiering
         </Button>
@@ -230,7 +263,7 @@ const PhotoIdentifyPage = () => {
           </p>
           <Button
             variant="outline"
-            onClick={() => navigate("/")}
+            onClick={openFilePicker}
           >
             Försök igen
           </Button>

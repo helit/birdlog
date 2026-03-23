@@ -76,9 +76,8 @@ const IdentifyPage = () => {
 
     const reader = new FileReader();
     reader.onload = () => {
-      // Reset after reading so the same file triggers onChange next time
       if (fileInputRef.current) fileInputRef.current.value = "";
-      navigate("/identify/photo", { state: { imageData: reader.result } });
+      navigate("/identify/photo", { state: { imageData: reader.result, latitude, longitude } });
     };
     reader.readAsDataURL(file);
   };
@@ -197,7 +196,7 @@ const IdentifyPage = () => {
       <input
         ref={fileInputRef}
         type="file"
-        accept="image/*"
+        accept="image/jpeg,image/png,image/webp,image/gif"
         className="hidden"
         onChange={handlePhotoSelect}
       />
@@ -205,7 +204,7 @@ const IdentifyPage = () => {
       <div className="flex justify-center gap-6">
         <button
           className="flex size-14 items-center justify-center rounded-full bg-card shadow-sm active:scale-95"
-          onClick={() => navigate("/identify/guided")}
+          onClick={() => navigate("/identify/guided", { state: { latitude, longitude } })}
         >
           <WandSparklesIcon className="size-6 text-primary" />
         </button>
