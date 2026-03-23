@@ -1,22 +1,14 @@
 import { Button } from "@/components/ui/button";
 import { Card } from "@/components/ui/card";
-import {
-  Command,
-  CommandEmpty,
-  CommandGroup,
-  CommandInput,
-  CommandItem,
-  CommandList,
-} from "@/components/ui/command";
 import { Input } from "@/components/ui/input";
-import { Popover, PopoverContent, PopoverTrigger } from "@/components/ui/popover";
 import { Textarea } from "@/components/ui/textarea";
 import { CREATE_SIGHTING, UPDATE_SIGHTING } from "@/graphql/mutations";
 import { MY_SIGHTINGS, SEARCH_SPECIES, MY_LIFE_LIST } from "@/graphql/queries";
 import { useLazyQuery, useMutation } from "@apollo/client";
-import { useEffect, useState } from "react";
+import { useEffect, useRef, useState } from "react";
 import { useLocation, useNavigate, useParams } from "react-router-dom";
 import { toast } from "sonner";
+import { MapPin } from "lucide-react";
 
 const SightingFormPage = () => {
   const navigate = useNavigate();
@@ -26,26 +18,37 @@ const SightingFormPage = () => {
   const sighting = state?.sighting;
   const prefill = state?.prefill;
 
-  const [speciesId, setSpeciesId] = useState(sighting?.species.id ?? prefill?.speciesId ?? "");
-  const [latitude, setLatitude] = useState<number | null>(sighting?.latitude ?? null);
-  const [longitude, setLongitude] = useState<number | null>(sighting?.longitude ?? null);
-  const [location, setLocation] = useState(sighting?.location ?? "");
-  const [notes, setNotes] = useState(sighting?.notes ?? "");
+  const pickedLocation = state?.pickedLocation;
+
+  const [speciesId, setSpeciesId] = useState(
+    sighting?.species.id ?? prefill?.speciesId ?? state?.speciesId ?? "",
+  );
+  const [latitude, setLatitude] = useState<number | null>(
+    pickedLocation?.latitude ?? sighting?.latitude ?? null,
+  );
+  const [longitude, setLongitude] = useState<number | null>(
+    pickedLocation?.longitude ?? sighting?.longitude ?? null,
+  );
+  const [location, setLocation] = useState(sighting?.location ?? state?.location ?? "");
+  const [notes, setNotes] = useState(sighting?.notes ?? state?.notes ?? "");
   const [date, setDate] = useState(
-    sighting?.date.split("T")[0] ?? new Date().toISOString().split("T")[0],
+    sighting?.date.split("T")[0] ?? state?.date ?? new Date().toISOString().split("T")[0],
   );
   const [selectedSpeciesName, setSelectedSpeciesName] = useState(
-    sighting?.species.swedishName ?? prefill?.swedishName ?? "",
+    sighting?.species.swedishName ?? prefill?.swedishName ?? state?.selectedSpeciesName ?? "",
   );
 
   const [executeSearch, { data }] = useLazyQuery(SEARCH_SPECIES);
 
-  const [open, setOpen] = useState(false);
+  const [searchOpen, setSearchOpen] = useState(false);
+  const [searchValue, setSearchValue] = useState("");
+  const searchInputRef = useRef<HTMLInputElement>(null);
 
   const selectSpecies = (species: { id: string; swedishName: string }) => {
     setSpeciesId(species.id);
     setSelectedSpeciesName(species.swedishName);
-    setOpen(false);
+    setSearchOpen(false);
+    setSearchValue("");
   };
 
   const [createSighting, { loading: saving }] = useMutation(CREATE_SIGHTING, {
@@ -59,7 +62,7 @@ const SightingFormPage = () => {
   });
 
   useEffect(() => {
-    if (!sighting) {
+    if (!sighting && !pickedLocation) {
       navigator.geolocation.getCurrentPosition((pos) => {
         setLatitude(Number(pos.coords.latitude.toFixed(4)));
         setLongitude(Number(pos.coords.longitude.toFixed(4)));
@@ -71,35 +74,57 @@ const SightingFormPage = () => {
     <div>
       <h1 className="mb-6 text-xl font-bold">{id ? "Redigera observation" : "Ny observation"}</h1>
       <Card className="flex flex-col gap-4 p-4">
-        <div className="flex flex-col gap-1">
+        <div className="relative flex flex-col gap-1">
           <label className="text-sm font-medium">Art</label>
-          <Popover open={open} onOpenChange={setOpen}>
-            <PopoverTrigger className="flex w-full items-center rounded-md border border-input bg-background px-3 py-2 text-sm text-left hover:bg-accent">
+          {searchOpen ? (
+            <>
+              <Input
+                ref={searchInputRef}
+                autoFocus
+                placeholder="Sök art..."
+                value={searchValue}
+                onChange={(e) => {
+                  const value = e.target.value;
+                  setSearchValue(value);
+                  if (value.length >= 2) {
+                    executeSearch({ variables: { query: value } });
+                  }
+                }}
+                onBlur={() => {
+                  // Small delay so tap on result registers before closing
+                  setTimeout(() => setSearchOpen(false), 200);
+                }}
+              />
+              {searchValue.length >= 2 && (
+                <ul className="absolute top-full left-0 right-0 z-50 mt-1 max-h-60 overflow-y-auto rounded-md bg-popover shadow-md">
+                  {data?.searchSpecies?.length ? (
+                    data.searchSpecies.map((species: { id: string; swedishName: string }) => (
+                      <li key={species.id}>
+                        <button
+                          type="button"
+                          className="w-full px-3 py-2 text-left text-sm hover:bg-accent"
+                          onMouseDown={(e) => e.preventDefault()}
+                          onClick={() => selectSpecies(species)}
+                        >
+                          {species.swedishName}
+                        </button>
+                      </li>
+                    ))
+                  ) : (
+                    <li className="px-3 py-2 text-sm text-muted-foreground">Ingen art hittades.</li>
+                  )}
+                </ul>
+              )}
+            </>
+          ) : (
+            <button
+              type="button"
+              className="flex w-full items-center rounded-md border border-input bg-background px-3 py-2 text-sm text-left hover:bg-accent"
+              onClick={() => setSearchOpen(true)}
+            >
               {selectedSpeciesName || <span className="text-muted-foreground">Sök art...</span>}
-            </PopoverTrigger>
-            <PopoverContent className="w-[calc(100vw-4rem)] p-0" align="start">
-              <Command shouldFilter={false}>
-                <CommandInput
-                  placeholder="Sök art..."
-                  onValueChange={(value) => {
-                    if (value.length >= 2) {
-                      executeSearch({ variables: { query: value } });
-                    }
-                  }}
-                />
-                <CommandList>
-                  <CommandEmpty>Ingen art hittades.</CommandEmpty>
-                  <CommandGroup>
-                    {data?.searchSpecies.map((species: { id: string; swedishName: string }) => (
-                      <CommandItem key={species.id} onSelect={() => selectSpecies(species)}>
-                        {species.swedishName}
-                      </CommandItem>
-                    ))}
-                  </CommandGroup>
-                </CommandList>
-              </Command>
-            </PopoverContent>
-          </Popover>
+            </button>
+          )}
         </div>
 
         <div className="flex flex-col gap-1">
@@ -134,18 +159,48 @@ const SightingFormPage = () => {
             value={location}
             onChange={(e) => setLocation(e.target.value)}
           />
-          <Button
-            variant="outline"
-            size="sm"
-            onClick={() => {
-              navigator.geolocation.getCurrentPosition((pos) => {
-                setLatitude(Number(pos.coords.latitude.toFixed(4)));
-                setLongitude(Number(pos.coords.longitude.toFixed(4)));
-              });
-            }}
-          >
-            Uppdatera position
-          </Button>
+          <div className="flex gap-2">
+            <Button
+              variant="outline"
+              size="sm"
+              className="flex-1"
+              onClick={() => {
+                navigator.geolocation.getCurrentPosition((pos) => {
+                  setLatitude(Number(pos.coords.latitude.toFixed(4)));
+                  setLongitude(Number(pos.coords.longitude.toFixed(4)));
+                });
+              }}
+            >
+              Nuvarande position
+            </Button>
+            <Button
+              variant="outline"
+              size="sm"
+              className="flex-1"
+              onClick={() => {
+                const returnTo = id ? `/edit/${id}` : "/new";
+                navigate("/pick-location", {
+                  state: {
+                    latitude,
+                    longitude,
+                    returnTo,
+                    formState: {
+                      sighting,
+                      prefill,
+                      speciesId,
+                      selectedSpeciesName,
+                      date,
+                      location,
+                      notes,
+                    },
+                  },
+                });
+              }}
+            >
+              <MapPin className="size-4" />
+              Välj på karta
+            </Button>
+          </div>
         </div>
 
         <div className="flex flex-col gap-1">

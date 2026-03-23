@@ -13,6 +13,7 @@ import Header from "./components/Header.js";
 import IdentifyPage from "./pages/IdentifyPage.js";
 import PhotoIdentifyPage from "./pages/PhotoIdentifyPage.js";
 import GuidedIdentifyPage from "./pages/GuidedIdentifyPage.js";
+import PickLocationPage from "./pages/PickLocationPage.js";
 
 function App() {
   const { user } = useAuth();
@@ -39,6 +40,7 @@ function App() {
               <Route path="/sighting/:id" element={<SightingDetailPage />} />
               <Route path="/new" element={<SightingFormPage key="new" />} />
               <Route path="/edit/:id" element={<SightingFormPage key="edit" />} />
+              <Route path="/pick-location" element={<PickLocationPage />} />
               <Route path="/life-list" element={<LifeListPage />} />
               <Route path="/life-list/:speciesId" element={<LifeListDetailPage />} />
               <Route path="*" element={<Navigate to="/" replace />} />
