@@ -17,7 +17,12 @@ async function backfill() {
 
   for (const sighting of sightings) {
     try {
-      const distribution = await getAreaDistribution(sighting.latitude, sighting.longitude);
+      // Use the sighting's date and location — rarity is a snapshot in time
+      const distribution = await getAreaDistribution(
+        sighting.latitude,
+        sighting.longitude,
+        { date: sighting.date, thorough: true },
+      );
       const rarity = calculateSpeciesRarity(sighting.species.scientificName, distribution);
 
       await prisma.sighting.update({

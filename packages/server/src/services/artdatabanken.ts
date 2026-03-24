@@ -45,9 +45,9 @@ const distributionCache = new Map<string, AreaDistribution>();
 const inflightRequests = new Map<string, Promise<AreaDistribution>>();
 const CACHE_TTL = 2 * 60 * 60 * 1000; // 2 hours
 
-function getDistributionCacheKey(lat: number, lng: number): string {
+function getDistributionCacheKey(lat: number, lng: number, date: Date): string {
   // Round to ~22km grid cells (0.2°) so nearby coordinates share cache
-  return `${Math.round(lat * 5)}_${Math.round(lng * 5)}_${new Date().getMonth()}`;
+  return `${Math.round(lat * 5)}_${Math.round(lng * 5)}_${date.getFullYear()}-${date.getMonth()}`;
 }
 
 function getApiKey(): string {
@@ -60,12 +60,14 @@ export async function getTopBirdTaxa(
   latitude: number,
   longitude: number,
   take = 20,
+  forDate: Date = new Date(),
 ): Promise<TaxonAggregationRecord[]> {
-  const now = new Date();
-  const startDate = new Date(now.getFullYear(), now.getMonth(), 1)
+  const startDate = new Date(forDate.getFullYear(), forDate.getMonth(), 1)
     .toISOString()
     .split("T")[0];
-  const endDate = now.toISOString().split("T")[0];
+  const endDate = new Date(forDate.getFullYear(), forDate.getMonth() + 1, 0)
+    .toISOString()
+    .split("T")[0];
 
   const res = await fetch(
     `${SOS_BASE_URL}/Observations/TaxonAggregation?skip=0&take=${take}`,
@@ -170,6 +172,7 @@ export async function getWikimediaImage(
 
 async function bulkResolveTaxonNames(
   taxonIds: number[],
+  thorough = false,
 ): Promise<Map<number, { scientificName: string; vernacularName: string }>> {
   const nameMap = new Map<number, { scientificName: string; vernacularName: string }>();
   if (taxonIds.length === 0) return nameMap;
@@ -192,7 +195,6 @@ async function bulkResolveTaxonNames(
 
   if (res.ok) {
     const data: ObservationSearchResponse = await res.json();
-    console.log(`[bulkResolve] Requested ${taxonIds.length} taxa, got ${data.records.length} observations`);
     for (const record of data.records) {
       if (!nameMap.has(record.taxon.id)) {
         nameMap.set(record.taxon.id, {
@@ -201,22 +203,42 @@ async function bulkResolveTaxonNames(
         });
       }
     }
-    console.log(`[bulkResolve] Resolved ${nameMap.size} unique taxa out of ${taxonIds.length}`);
-  } else {
-    console.error(`[bulkResolve] API error: ${res.status}`);
   }
 
-  // Skip individual fallback calls to avoid rate limiting.
-  // The bulk call covers most species — any missing ones just won't appear in the distribution.
+  // In thorough mode (backfill), resolve missing taxa individually with delays
+  if (thorough) {
+    const missing = taxonIds.filter((id) => !nameMap.has(id));
+    if (missing.length > 0) {
+      console.log(`[bulkResolve] Resolving ${missing.length} remaining taxa individually...`);
+      const BATCH_SIZE = 5;
+      for (let i = 0; i < missing.length; i += BATCH_SIZE) {
+        if (i > 0) await new Promise((r) => setTimeout(r, 1000));
+        const batch = missing.slice(i, i + BATCH_SIZE);
+        const resolved = await Promise.all(
+          batch.map(async (id) => {
+            const names = await getTaxonName(id);
+            return names ? { id, ...names } : null;
+          }),
+        );
+        for (const r of resolved) {
+          if (r) nameMap.set(r.id, { scientificName: r.scientificName, vernacularName: r.vernacularName });
+        }
+      }
+    }
+  }
 
+  console.log(`[bulkResolve] Resolved ${nameMap.size}/${taxonIds.length} taxa${thorough ? " (thorough)" : ""}`);
   return nameMap;
 }
 
 export async function getAreaDistribution(
   latitude: number,
   longitude: number,
+  options?: { date?: Date; thorough?: boolean },
 ): Promise<AreaDistribution> {
-  const key = getDistributionCacheKey(latitude, longitude);
+  const date = options?.date ?? new Date();
+  const thorough = options?.thorough ?? false;
+  const key = getDistributionCacheKey(latitude, longitude, date);
   const cached = distributionCache.get(key);
   if (cached && Date.now() - cached.fetchedAt < CACHE_TTL) return cached;
 
@@ -225,7 +247,7 @@ export async function getAreaDistribution(
   const inflight = inflightRequests.get(key);
   if (inflight) return inflight;
 
-  const promise = fetchAreaDistribution(latitude, longitude, key);
+  const promise = fetchAreaDistribution(latitude, longitude, date, thorough, key);
   inflightRequests.set(key, promise);
   promise.finally(() => inflightRequests.delete(key));
   return promise;
@@ -234,14 +256,16 @@ export async function getAreaDistribution(
 async function fetchAreaDistribution(
   latitude: number,
   longitude: number,
+  date: Date,
+  thorough: boolean,
   cacheKey: string,
 ): Promise<AreaDistribution> {
-  // Fetch top 200 taxa for the area (current month, 15km radius)
-  const taxa = await getTopBirdTaxa(latitude, longitude, 200);
+  // Fetch top 200 taxa for the area (given month, 15km radius)
+  const taxa = await getTopBirdTaxa(latitude, longitude, 200, date);
 
-  // Resolve all names in a single bulk API call
+  // Resolve names — thorough mode uses individual fallbacks for full coverage
   const taxonIds = taxa.map((t) => t.taxonId);
-  const nameMap = await bulkResolveTaxonNames(taxonIds);
+  const nameMap = await bulkResolveTaxonNames(taxonIds, thorough);
 
   const entries: DistributionEntry[] = taxa
     .map((t) => {
