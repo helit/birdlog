@@ -1,7 +1,7 @@
 import { Button } from "@/components/ui/button";
 import { Spinner } from "@/components/ui/spinner";
 import { proxyImageUrl } from "@/lib/utils";
-import { BirdIcon, PlusIcon } from "lucide-react";
+import { ArrowLeftIcon, BirdIcon, PlusIcon } from "lucide-react";
 import { ChangeEvent, useRef, useState } from "react";
 import { Navigate, useLocation, useNavigate } from "react-router-dom";
 
@@ -107,6 +107,14 @@ const PhotoIdentifyPage = () => {
 
   return (
     <div className="flex flex-col gap-4">
+      <button
+        className="flex items-center gap-1 text-sm text-muted-foreground hover:text-foreground"
+        onClick={() => navigate("/")}
+      >
+        <ArrowLeftIcon className="size-4" />
+        Tillbaka
+      </button>
+
       <input
         ref={fileInputRef}
         type="file"

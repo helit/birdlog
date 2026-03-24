@@ -8,7 +8,7 @@ import { useLazyQuery, useMutation } from "@apollo/client";
 import { useEffect, useRef, useState } from "react";
 import { useLocation, useNavigate, useParams } from "react-router-dom";
 import { toast } from "sonner";
-import { MapPin } from "lucide-react";
+import { ArrowLeftIcon, MapPin } from "lucide-react";
 
 const SightingFormPage = () => {
   const navigate = useNavigate();
@@ -72,6 +72,13 @@ const SightingFormPage = () => {
 
   return (
     <div>
+      <button
+        className="mb-4 flex items-center gap-1 text-sm text-muted-foreground hover:text-foreground"
+        onClick={() => navigate(-1)}
+      >
+        <ArrowLeftIcon className="size-4" />
+        Tillbaka
+      </button>
       <h1 className="mb-6 text-xl font-bold">{id ? "Redigera observation" : "Ny observation"}</h1>
       <Card className="flex flex-col gap-4 p-4">
         <div className="relative flex flex-col gap-1">
@@ -242,7 +249,8 @@ const SightingFormPage = () => {
                 });
                 toast.success("Observation sparad!");
               }
-              navigate("/sightings");
+              // If user came from identification flow, go back to identify page to continue
+              navigate(prefill ? "/" : "/sightings");
             } catch (error) {
               toast.error(
                 id

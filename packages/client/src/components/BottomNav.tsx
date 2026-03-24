@@ -1,5 +1,5 @@
 import { cn } from "@/lib/utils";
-import { BinocularsIcon, BirdIcon, CircleQuestionMarkIcon } from "lucide-react";
+import { BinocularsIcon, BirdIcon, CircleQuestionMarkIcon, UserIcon } from "lucide-react";
 import { Link } from "react-router-dom";
 import { useLocation } from "react-router-dom";
 
@@ -40,6 +40,16 @@ const BottomNav = () => {
         >
           <BirdIcon />
           {isActive("/life-list") && <span className="absolute bottom-0 h-0.5 w-full bg-primary" />}
+        </Link>
+        <Link
+          to="/profile"
+          className={cn(
+            "relative flex flex-1 flex-col items-center p-2",
+            isActive("/profile") ? "bg-primary/10 text-primary" : "text-muted-foreground",
+          )}
+        >
+          <UserIcon />
+          {isActive("/profile") && <span className="absolute bottom-0 h-0.5 w-full bg-primary" />}
         </Link>
       </div>
     </nav>

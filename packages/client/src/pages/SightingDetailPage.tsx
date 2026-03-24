@@ -37,7 +37,7 @@ const SightingDetailPage = () => {
     <div className="flex flex-col gap-6">
       <button
         className="flex items-center gap-1 text-sm text-muted-foreground hover:text-foreground"
-        onClick={() => navigate("/")}
+        onClick={() => navigate(-1)}
       >
         <ArrowLeftIcon className="size-4" />
         Tillbaka
@@ -129,7 +129,7 @@ const SightingDetailPage = () => {
             try {
               await deleteSighting({ variables: { deleteSightingId: sighting.id } });
               toast.success("Observation raderad");
-              navigate("/");
+              navigate("/sightings");
             } catch (error) {
               toast.error("Observation kunde inte raderas. Vänligen försök igen.");
               console.error(error);

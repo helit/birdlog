@@ -2,7 +2,7 @@ import { Skeleton } from "@/components/ui/skeleton";
 import { NEARBY_BIRDS } from "@/graphql/queries";
 import { proxyImageUrl, toSpeciesSlug } from "@/lib/utils";
 import { useQuery } from "@apollo/client";
-import { BirdIcon, CameraIcon, PlusIcon, WandSparklesIcon } from "lucide-react";
+import { BirdIcon, CameraIcon, MapPinIcon, PlusIcon, WandSparklesIcon } from "lucide-react";
 import { ChangeEvent, useEffect, useState } from "react";
 import { useNavigate } from "react-router-dom";
 import { useRef } from "react";
@@ -92,7 +92,7 @@ const IdentifyPage = () => {
   const isLoading = !geoError && (loading || !latitude);
 
   return (
-    <div className="flex flex-col gap-4">
+    <div className="flex min-h-[calc(100dvh-5rem-1rem)] flex-col gap-4">
       {/* Hero card */}
       {isLoading ? (
         <HeroSkeleton />
@@ -153,8 +153,20 @@ const IdentifyPage = () => {
           {isLoading ? (
             <ListSkeleton />
           ) : birds.length === 0 ? (
-            <div className="flex h-40 items-center justify-center">
-              <p className="text-sm text-muted-foreground">Inga fåglar hittades i närheten</p>
+            <div className="flex h-40 flex-col items-center justify-center gap-2">
+              {geoError ? (
+                <>
+                  <MapPinIcon className="size-5 text-muted-foreground" />
+                  <p className="text-sm text-muted-foreground">
+                    Kunde inte hämta din position
+                  </p>
+                  <p className="text-xs text-muted-foreground">
+                    Aktivera platstjänster för att se fåglar nära dig
+                  </p>
+                </>
+              ) : (
+                <p className="text-sm text-muted-foreground">Inga fåglar hittades i närheten</p>
+              )}
             </div>
           ) : (
             <ul>
@@ -214,7 +226,7 @@ const IdentifyPage = () => {
         onChange={handlePhotoSelect}
       />
 
-      <div className="flex justify-center gap-6">
+      <div className="mt-auto flex justify-center gap-6 pb-4">
         <button
           className="flex size-14 items-center justify-center rounded-full bg-card shadow-sm active:scale-95"
           onClick={() => navigate("/identify/guided", { state: { latitude, longitude } })}

@@ -9,7 +9,7 @@ import SightingDetailPage from "./pages/SightingDetailPage.js";
 import LifeListDetailPage from "./pages/LifeListDetailPage.js";
 import { Toaster } from "./components/ui/sonner.js";
 import BottomNav from "./components/BottomNav.js";
-import Header from "./components/Header.js";
+import ProfilePage from "./pages/ProfilePage.js";
 import IdentifyPage from "./pages/IdentifyPage.js";
 import PhotoIdentifyPage from "./pages/PhotoIdentifyPage.js";
 import GuidedIdentifyPage from "./pages/GuidedIdentifyPage.js";
@@ -31,8 +31,7 @@ function App() {
         </div>
       ) : (
         <>
-          <Header />
-          <div className="mx-auto w-full max-w-2xl px-4 pb-20">
+          <div className="mx-auto w-full max-w-2xl px-4 pb-20 pt-4">
             <Routes>
               <Route path="/" element={<IdentifyPage />} />
               <Route path="/identify/guided" element={<GuidedIdentifyPage />} />
@@ -45,6 +44,7 @@ function App() {
               <Route path="/bird/:scientificName" element={<BirdInfoPage />} />
               <Route path="/life-list" element={<LifeListPage />} />
               <Route path="/life-list/:speciesId" element={<LifeListDetailPage />} />
+              <Route path="/profile" element={<ProfilePage />} />
               <Route path="*" element={<Navigate to="/" replace />} />
             </Routes>
             <BottomNav />

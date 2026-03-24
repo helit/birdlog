@@ -6,6 +6,7 @@ import { Button } from "@/components/ui/button.js";
 import { Input } from "@/components/ui/input.js";
 import { Label } from "@/components/ui/label.js";
 import { Card, CardContent, CardDescription, CardHeader, CardTitle } from "@/components/ui/card.js";
+import { BirdIcon } from "lucide-react";
 import { Link } from "react-router-dom";
 
 const RegisterPage = () => {
@@ -33,7 +34,12 @@ const RegisterPage = () => {
   };
 
   return (
-    <Card className="w-full max-w-sm">
+    <div className="flex w-full max-w-sm flex-col items-center gap-6">
+      <div className="flex items-center gap-2">
+        <BirdIcon className="size-8 text-primary" />
+        <span className="text-2xl font-bold">BirdLog</span>
+      </div>
+    <Card className="w-full">
       <CardHeader>
         <CardTitle className="text-2xl">Ny användare</CardTitle>
         <CardDescription>Skapa ett konto för att börja logga fåglar</CardDescription>
@@ -82,6 +88,7 @@ const RegisterPage = () => {
         </form>
       </CardContent>
     </Card>
+    </div>
   );
 };
 
