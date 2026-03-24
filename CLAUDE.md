@@ -1,9 +1,10 @@
 # BIRDLOG — Claude Project Context
 
 Last updated: 2026-03-24
-Current phase: Phase 6 DONE, Phase 7 next (Notifications & Alerts)
+Current phase: Phase 6 DONE, UX audit done, Phase 7 next (Statistics & Insights)
 Phase 3 quiz: COMPLETED
 Phase 6 quiz: COMPLETED (5/8)
+Phase 7 (Notifications): SKIPPED — replaced with more valuable features
 Phase 8 (PWA & offline): DEFERRED — will do last, if at all
 
 ## About
@@ -39,9 +40,11 @@ npm run dev              # runs both client + server from root
 4. Design & styling pass                     [DONE]
 5. Artdatabanken API integration             [DONE]
 6. AI bird identification (OpenAI API)       [DONE]
-7. Notifications & alerts (Web Push)
-8. PWA & offline basics (deferred — do last if needed)
-9. Polish & portfolio prep
+7. Statistics & insights
+8. Bird dictionary / discover
+9. Weather & season context
+10. PWA & offline basics (deferred — do last if needed)
+11. Polish & portfolio prep
 
 ## Phase Gate Rule
 
@@ -170,8 +173,8 @@ before proceeding. This reinforces learning and ensures concepts stick.
 - `packages/client/src/pages/SightingDetailPage.tsx` — Sighting detail view (all info, map placeholder, edit/delete actions)
 - `packages/client/src/pages/LifeListDetailPage.tsx` — Life list species detail (Wikipedia description, stats, map, sightings list)
 - `packages/client/src/components/SightingCard.tsx` — Compact clickable sighting row (navigates to /sighting/:id)
-- `packages/client/src/components/Header.tsx` — Sticky top bar with app title and logout button
-- `packages/client/src/components/BottomNav.tsx` — Fixed bottom tab navigation (Observationer, Ny, Fågellista)
+- `packages/client/src/pages/ProfilePage.tsx` — Profile/settings page (logout, future: edit profile, change password)
+- `packages/client/src/components/BottomNav.tsx` — Fixed bottom tab navigation (Identifiera, Observationer, Fågellista, Profil)
 - `packages/client/src/components/LifeListCard.tsx` — Compact clickable life list row (navigates to /life-list/:speciesId)
 - `packages/client/src/components/SightingMap.tsx` — Reusable Leaflet map component (accepts markers array, used on both detail pages)
 - `packages/client/src/components/EmptyState.tsx` — Centered empty state with BirdIcon and message (reusable)
@@ -370,9 +373,30 @@ before proceeding. This reinforces learning and ensures concepts stick.
 - Nearby birds (hero + list) on IdentifyPage are now tappable → navigate to BirdInfoPage
 - Future: will become the basis for a "discover birds" / dictionary feature with search
 
+## UX Audit & Navigation Fixes (2026-03-24)
+
+### Navigation fixes
+- SightingDetailPage: back button now uses `navigate(-1)` instead of hardcoded `/`
+- SightingDetailPage: delete navigates to `/sightings` instead of `/`
+- PhotoIdentifyPage: added back arrow button (was missing)
+- SightingFormPage: added back arrow button (was missing)
+- IdentifyPage: geolocation error now shows "Kunde inte hämta din position" instead of misleading "Inga fåglar hittades"
+- Identification flow: after logging sighting from prefill, navigates back to `/` (identify page) instead of `/sightings`
+
+### Header → Profile page
+- Removed sticky Header component (deleted `Header.tsx`)
+- Created ProfilePage (`/profile`) — user info, logout button, placeholder rows for edit profile / change password
+- BottomNav: 4 tabs now — Identifiera, Observationer, Fågellista, Profil
+- BirdLog branding (bird icon + name) added to LoginPage and RegisterPage
+
+### Layout
+- IdentifyPage: action buttons (wizard, plus, camera) vertically centered using `min-h` + `mt-auto`
+- Content container: `pt-4` top padding (replaces header margin)
+
 ### TODO
-- Phase 7: Notifications & Alerts (Web Push)
-- Bird discovery/dictionary feature: search for any bird and see info (builds on BirdInfoPage)
+- Phase 7: Statistics & Insights
+- Phase 8: Bird dictionary / discover feature (builds on BirdInfoPage)
+- Phase 9: Weather & season context
 
 ## Key Files (new)
 
@@ -387,7 +411,8 @@ before proceeding. This reinforces learning and ensures concepts stick.
 - `packages/client/src/pages/BirdInfoPage.tsx` — Species info page (image, description, family, "Spara som observation" button)
 - `packages/client/src/pages/PhotoIdentifyPage.tsx` — Photo identification page (photo overlay with top result, secondary results, in-page file picker for new photo)
 - `packages/client/src/pages/GuidedIdentifyPage.tsx` — Guided identification wizard (4-step: size, colors, habitat, notes → AI results with refinement tips)
-- `packages/client/src/components/BottomNav.tsx` — Updated: Identifiera, Observationer, Fågellista
+- `packages/client/src/pages/ProfilePage.tsx` — Profile/settings page (logout, future: edit profile, change password)
+- `packages/client/src/components/BottomNav.tsx` — 4 tabs: Identifiera, Observationer, Fågellista, Profil
 - `packages/client/src/components/ui/skeleton.tsx` — Skeleton loading component
 - `packages/client/src/utils/types.ts` — Shared TypeScript interfaces (Species, Sighting, MyLifeList)
 - `packages/client/src/lib/utils.ts` — cn() utility, proxyImageUrl(), toSpeciesSlug(), fromSpeciesSlug()
