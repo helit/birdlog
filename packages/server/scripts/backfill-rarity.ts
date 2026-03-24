@@ -7,7 +7,7 @@ async function backfill() {
   const retryOnly = process.argv.includes("--retry");
 
   const sightings = await prisma.sighting.findMany({
-    where: retryOnly ? { rarityDescription: { contains: "just nu" } } : undefined,
+    where: retryOnly ? { updatedAt: { lt: new Date(Date.now() - 60 * 60 * 1000) } } : undefined,
     include: { species: true },
     orderBy: { date: "desc" },
   });
@@ -20,7 +20,7 @@ async function backfill() {
   for (let i = 0; i < sightings.length; i++) {
     const sighting = sightings[i];
     // Delay between sightings to avoid Artdatabanken rate limits
-    if (i > 0) await new Promise((r) => setTimeout(r, 5000));
+    if (i > 0) await new Promise((r) => setTimeout(r, 10000));
     try {
       // Use the sighting's date and location — rarity is a snapshot in time
       const distribution = await getAreaDistribution(
