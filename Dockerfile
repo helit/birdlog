@@ -37,6 +37,10 @@ RUN npx prisma generate --schema=packages/server/prisma/schema.prisma
 # Copy built server
 COPY --from=server-build /app/packages/server/dist/ ./packages/server/dist/
 
+# Copy server source + scripts (for one-off tasks like backfills via tsx)
+COPY packages/server/src/ ./packages/server/src/
+COPY packages/server/scripts/ ./packages/server/scripts/
+
 # Copy built client
 COPY --from=client-build /app/packages/client/dist/ ./packages/client/dist/
 
