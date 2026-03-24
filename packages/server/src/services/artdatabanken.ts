@@ -249,7 +249,7 @@ export async function getAreaDistribution(
 
   const promise = fetchAreaDistribution(latitude, longitude, date, thorough, key);
   inflightRequests.set(key, promise);
-  promise.finally(() => inflightRequests.delete(key));
+  promise.finally(() => inflightRequests.delete(key)).catch(() => {});
   return promise;
 }
 

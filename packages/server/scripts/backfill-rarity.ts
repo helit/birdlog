@@ -15,7 +15,10 @@ async function backfill() {
   let updated = 0;
   let failed = 0;
 
-  for (const sighting of sightings) {
+  for (let i = 0; i < sightings.length; i++) {
+    const sighting = sightings[i];
+    // Delay between sightings to avoid Artdatabanken rate limits
+    if (i > 0) await new Promise((r) => setTimeout(r, 2000));
     try {
       // Use the sighting's date and location — rarity is a snapshot in time
       const distribution = await getAreaDistribution(
