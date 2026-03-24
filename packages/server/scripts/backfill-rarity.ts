@@ -5,12 +5,11 @@ const prisma = new PrismaClient();
 
 async function backfill() {
   const sightings = await prisma.sighting.findMany({
-    where: { rarityLevel: null },
     include: { species: true },
     orderBy: { date: "desc" },
   });
 
-  console.log(`Found ${sightings.length} sightings without rarity data`);
+  console.log(`Found ${sightings.length} sightings to recalculate rarity`);
 
   let updated = 0;
   let failed = 0;
@@ -26,7 +25,10 @@ async function backfill() {
         sighting.longitude,
         { date: sighting.date, thorough: true },
       );
-      const rarity = calculateSpeciesRarity(sighting.species.scientificName, distribution);
+      const rarity = calculateSpeciesRarity(sighting.species.scientificName, distribution, {
+        tense: "past",
+        month: sighting.date.getMonth(),
+      });
 
       await prisma.sighting.update({
         where: { id: sighting.id },

@@ -387,20 +387,38 @@ export interface SpeciesRarityResult {
   rank: number | null;
 }
 
+const SWEDISH_MONTHS = [
+  "januari", "februari", "mars", "april", "maj", "juni",
+  "juli", "augusti", "september", "oktober", "november", "december",
+];
+
+interface RarityOptions {
+  /** "present" for live data (nearby birds, bird info), "past" for stored sightings */
+  tense?: "present" | "past";
+  /** Month of the observation (0-11), used for contextual descriptions */
+  month?: number;
+}
+
 export function calculateSpeciesRarity(
   scientificName: string,
   distribution: AreaDistribution,
+  options: RarityOptions = {},
 ): SpeciesRarityResult {
+  const { tense = "present", month } = options;
+  const monthName = month !== undefined ? SWEDISH_MONTHS[month] : undefined;
   const entries = distribution.entries;
   const index = entries.findIndex(
     (e) => e.scientificName.toLowerCase() === scientificName.toLowerCase(),
   );
 
   if (index === -1) {
+    const description = tense === "past"
+      ? `Arten hade inte observerats i området${monthName ? ` under ${monthName}` : ""} — en ovanlig observation.`
+      : `Arten har inte observerats i detta område${monthName ? ` under ${monthName}` : ""}.`;
     return {
       level: "not_observed",
       label: "Ej observerad",
-      description: "Arten har inte observerats i detta område den här månaden.",
+      description,
       observationCount: null,
       totalSpeciesInArea: distribution.totalSpecies,
       rank: null,
@@ -410,6 +428,8 @@ export function calculateSpeciesRarity(
   const entry = entries[index];
   const rank = index + 1;
   const percentile = rank / entries.length;
+  const count = entry.observationCount;
+  const monthCtx = monthName ? ` i ${monthName}` : "";
 
   let level: string;
   let label: string;
@@ -418,19 +438,27 @@ export function calculateSpeciesRarity(
   if (percentile <= 0.1) {
     level = "very_common";
     label = "Mycket vanlig";
-    description = `En av de mest observerade arterna i området just nu, med ${entry.observationCount} observationer den här månaden.`;
+    description = tense === "past"
+      ? `En av de mest observerade arterna i området${monthCtx}, med ${count} rapporter.`
+      : `En av de mest observerade arterna i området just nu, med ${count} rapporter${monthCtx}.`;
   } else if (percentile <= 0.35) {
     level = "common";
     label = "Vanlig";
-    description = `Observeras regelbundet i området, med ${entry.observationCount} observationer den här månaden.`;
+    description = tense === "past"
+      ? `Observerades regelbundet i området${monthCtx}, med ${count} rapporter.`
+      : `Observeras regelbundet i området, med ${count} rapporter${monthCtx}.`;
   } else if (percentile <= 0.7) {
     level = "uncommon";
     label = "Mindre vanlig";
-    description = `Förekommer i området men observeras inte lika ofta, med ${entry.observationCount} observationer den här månaden.`;
+    description = tense === "past"
+      ? `Förekom i området men observerades inte ofta${monthCtx} — bara ${count} rapporter bland ${distribution.totalSpecies} arter.`
+      : `Förekommer i området men observeras inte lika ofta, med ${count} rapporter${monthCtx}.`;
   } else {
     level = "rare";
     label = "Sällsynt";
-    description = `Ovanlig i området just nu, med bara ${entry.observationCount} observationer den här månaden.`;
+    description = tense === "past"
+      ? `Ovanlig i området${monthCtx} — bara ${count} rapporter bland ${distribution.totalSpecies} arter. Få observatörer hade sett arten här vid den tidpunkten.`
+      : `Ovanlig i området just nu, med bara ${count} rapporter${monthCtx}.`;
   }
 
   return {

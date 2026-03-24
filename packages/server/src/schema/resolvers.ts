@@ -312,8 +312,12 @@ export const resolvers = {
       let rarityData: Record<string, unknown> = {};
       if (species) {
         try {
+          const sightingDate = new Date(date);
           const distribution = await getAreaDistribution(latitude, longitude);
-          const rarity = calculateSpeciesRarity(species.scientificName, distribution);
+          const rarity = calculateSpeciesRarity(species.scientificName, distribution, {
+            tense: "past",
+            month: sightingDate.getMonth(),
+          });
           rarityData = {
             rarityLevel: rarity.level,
             rarityLabel: rarity.label,
