@@ -55,8 +55,9 @@ export const typeDefs = gql`
   }
 
   type NearbyBirdsResult {
+    hero: NearbyBird!
     common: [NearbyBird!]!
-    rare: NearbyBird
+    uncommon: [NearbyBird!]!
   }
 
   type SpeciesRarity {

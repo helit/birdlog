@@ -413,9 +413,27 @@ since they all serve the same goal: contextual bird knowledge.
 - Color-coded display: emerald (very common), sky (common), amber (uncommon), rose (rare), gray (not observed)
 - GraphQL: `SpeciesRarity` type, `speciesRarity` query, rarity fields on `Sighting` type
 
+### Nearby birds redesign (2026-03-24) [DONE]
+- **Layout**: hero card (rarest bird) + two sections: "Vanligast nära dig" (top 3) + "Ovanliga nära dig" (3 uncommon)
+- **GraphQL**: `NearbyBirdsResult` now has `hero: NearbyBird!`, `common: [NearbyBird!]!`, `uncommon: [NearbyBird!]!` (was `common` + `rare`)
+- **Accurate report counts**: observation counts now reflect actual observation reports (number of sighting events), not individual bird counts
+  - `getAllReportCounts()` in artdatabanken.ts — paginates through `Observations/Search` endpoint counting reports per taxon
+  - `getAreaDistribution()` uses report counts (replaces TaxonAggregation's individual bird counts)
+  - Validated against Artportalen — counts match when search areas align
+- **Credibility filter**: uncommon birds require at least 3 reports (MIN_REPORTS = 3) to appear in the list
+- **Hero card**: always amber-themed ("Ovanligast nära dig"), shows the least-reported credible bird
+- **Reusable BirdList component** extracted in IdentifyPage (used for both common and uncommon sections)
+- **Skeleton loading**: 3 items per section (was 5)
+
+### Observation count methodology
+- TaxonAggregation `observationCount` = individual birds seen (e.g. flock of 50 = 50)
+- Observations/Search record count = unique observation reports (e.g. flock of 50 = 1 report)
+- All user-facing counts now use report counts for accuracy
+- TaxonAggregation still used for species discovery (which species exist in area) and approximate ranking
+
 ### Caching strategy
 - **Nearby birds**: 24h per ~22km grid cell — result cached in resolvers.ts (`nearbyBirdsCache`)
-- **Area distribution** (rarity): 2h per grid cell + month — cached in artdatabanken.ts (`distributionCache`)
+- **Area distribution** (rarity): 2h per grid cell + month — cached in artdatabanken.ts (`distributionCache`), includes report counts
 - **Taxon name mapping** (taxonId → scientificName): permanent in-memory — `taxonNameCache` in artdatabanken.ts, populated from all sources (nearbyBirds, bulk Search, individual lookups), improves coverage over time
 - **Species imageUrl/description**: cached in DB (Species table) — fetched lazily from Wikipedia on first access
 - Location-based caches automatically refresh when user moves to a new area (~22km grid)
@@ -437,14 +455,14 @@ since they all serve the same goal: contextual bird knowledge.
 ## Key Files (new)
 
 ### Server
-- `packages/server/src/services/artdatabanken.ts` — Artdatabanken + Wikimedia API service (getTopBirdTaxa, getTaxonName, getWikimediaImage, getWikipediaSummary, getAreaDistribution, calculateSpeciesRarity)
+- `packages/server/src/services/artdatabanken.ts` — Artdatabanken + Wikimedia API service (getTopBirdTaxa, getTaxonName, getWikimediaImage, getWikipediaSummary, getAreaDistribution, getAllReportCounts, calculateSpeciesRarity)
 - `packages/server/scripts/backfill-rarity.ts` — One-off script to backfill rarity data on existing sightings
 - `packages/server/src/services/openai.ts` — OpenAI GPT-4o bird identification (identifyBird, identifyBirdFromDescription, BirdIdentification, GuidedIdentificationResult)
 - `packages/server/src/index.ts` — Express server with Apollo GraphQL + REST endpoints (`/api/image-proxy`, `/api/identify`, `/api/identify/guided` with species upsert)
 - `packages/server/prisma/seed.ts` — ~250 Swedish bird species seed (upsert-based, safe to re-run)
 
 ### Client
-- `packages/client/src/pages/IdentifyPage.tsx` — Landing page with nearby birds (tappable hero + list) + action buttons + hidden file input for photo capture
+- `packages/client/src/pages/IdentifyPage.tsx` — Landing page with nearby birds (hero card + common/uncommon sections + BirdList component) + action buttons + hidden file input for photo capture
 - `packages/client/src/pages/BirdInfoPage.tsx` — Species info page (image, description, family, live rarity badge, "Spara som observation" button)
 - `packages/client/src/components/RarityBadge.tsx` — Live rarity badge component (queries API, color-coded, used on BirdInfoPage)
 - `packages/client/src/pages/PhotoIdentifyPage.tsx` — Photo identification page (photo overlay with top result, secondary results, in-page file picker for new photo)

@@ -3,8 +3,6 @@ import { generateToken, GraphQLContext, requireAuth } from "../middleware/auth.j
 import { GraphQLError } from "graphql";
 import bcrypt from "bcrypt";
 import {
-  getTopBirdTaxa,
-  getTaxonName,
   getWikimediaImage,
   getWikipediaSummary,
   getAreaDistribution,
@@ -148,43 +146,39 @@ export const resolvers = {
         return cached.result;
       }
 
-      const taxa = await getTopBirdTaxa(latitude, longitude);
+      // Use distribution which now has accurate report counts
+      const distribution = await getAreaDistribution(latitude, longitude);
+      const entries = [...distribution.entries].sort(
+        (a, b) => b.observationCount - a.observationCount,
+      );
+      if (entries.length === 0) return { hero: null, common: [], uncommon: [] };
 
-      // Pre-warm the rarity distribution cache after nearbyBirds data is fetched
-      setTimeout(() => getAreaDistribution(latitude, longitude).catch(() => {}), 3000);
-      if (taxa.length === 0) return { common: [], rare: null };
+      // Common: top 3 most reported
+      const commonEntries = entries.slice(0, 3);
+      // Uncommon: least reported, but require at least 3 reports for credibility
+      const MIN_REPORTS = 3;
+      const credible = entries.filter((e) => e.observationCount >= MIN_REPORTS);
+      // Hero: least reported credible bird
+      const heroEntry = credible[credible.length - 1];
+      // Uncommon: next 3 least reported credible, excluding hero
+      const uncommonEntries = credible
+        .slice(-4, -1)
+        .reverse()
+        .filter((e) => e.taxonId !== heroEntry.taxonId);
 
-      // Top 6 most observed (hero card uses #1 when no rare bird, list shows the rest)
-      const common5 = taxa.slice(0, 6);
+      // Deduplicate and resolve images for the 7 selected birds
+      const allEntries = [...commonEntries, ...uncommonEntries, heroEntry];
+      const uniqueEntries = [...new Map(allEntries.map((e) => [e.taxonId, e])).values()];
 
-      // Find a rare bird: least observed taxon, only if it has
-      // significantly fewer observations than the median (< 25%)
-      const sorted = [...taxa].sort((a, b) => a.observationCount - b.observationCount);
-      const median = sorted[Math.floor(sorted.length / 2)].observationCount;
-      const rarest = sorted[0];
-      const rareTaxon =
-        rarest.observationCount < median * 0.25 ? rarest : null;
-
-      // Collect all taxa we need to look up (deduplicate if rare is already in common)
-      const toFetch = [...common5];
-      if (rareTaxon && !common5.some((t) => t.taxonId === rareTaxon.taxonId)) {
-        toFetch.push(rareTaxon);
-      }
-
-      // Fetch names + images in parallel
       const resolved = await Promise.all(
-        toFetch.map(async (t) => {
-          const names = await getTaxonName(t.taxonId);
-          if (!names) return null;
-
-          const imageUrl = await getWikimediaImage(names.scientificName);
-
+        uniqueEntries.map(async (e) => {
+          const imageUrl = await getWikimediaImage(e.scientificName);
           return {
-            taxonId: t.taxonId,
-            scientificName: names.scientificName,
-            vernacularName: names.vernacularName,
+            taxonId: e.taxonId,
+            scientificName: e.scientificName,
+            vernacularName: e.vernacularName,
             imageUrl,
-            observationCount: t.observationCount,
+            observationCount: e.observationCount,
           };
         }),
       );
@@ -193,13 +187,15 @@ export const resolvers = {
         resolved.filter((b) => b !== null).map((b) => [b.taxonId, b]),
       );
 
-      const common = common5
-        .map((t) => byTaxon.get(t.taxonId))
+      const hero = byTaxon.get(heroEntry.taxonId) ?? null;
+      const common = commonEntries
+        .map((e) => byTaxon.get(e.taxonId))
+        .filter((b) => b !== undefined);
+      const uncommon = uncommonEntries
+        .map((e) => byTaxon.get(e.taxonId))
         .filter((b) => b !== undefined);
 
-      const rare = rareTaxon ? byTaxon.get(rareTaxon.taxonId) ?? null : null;
-
-      const result = { common, rare };
+      const result = { hero, common, uncommon };
       nearbyBirdsCache.set(cacheKey, { result, fetchedAt: Date.now() });
       return result;
     },

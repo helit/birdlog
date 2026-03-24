@@ -129,13 +129,19 @@ export const SPECIES_RARITY = gql`
 export const NEARBY_BIRDS = gql`
   query NearbyBirds($latitude: Float!, $longitude: Float!) {
     nearbyBirds(latitude: $latitude, longitude: $longitude) {
+      hero {
+        scientificName
+        vernacularName
+        imageUrl
+        observationCount
+      }
       common {
         scientificName
         vernacularName
         imageUrl
         observationCount
       }
-      rare {
+      uncommon {
         scientificName
         vernacularName
         imageUrl

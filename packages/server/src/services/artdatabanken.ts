@@ -19,6 +19,8 @@ interface ObservationTaxon {
 
 interface Observation {
   taxon: ObservationTaxon;
+  event?: { startDate?: string; endDate?: string };
+  location?: { locality?: string; municipality?: { name?: string }; decimalLatitude?: number; decimalLongitude?: number };
 }
 
 interface ObservationSearchResponse {
@@ -101,6 +103,66 @@ export async function getTopBirdTaxa(
 
   const data: TaxonAggregationResponse = await res.json();
   return data.records;
+}
+
+// Paginate through Search endpoint to count reports per taxon (not individual birds)
+async function getAllReportCounts(
+  latitude: number,
+  longitude: number,
+  forDate: Date = new Date(),
+): Promise<Map<number, number>> {
+  const startDate = new Date(forDate.getFullYear(), forDate.getMonth(), 1)
+    .toISOString()
+    .split("T")[0];
+  const endDate = new Date(forDate.getFullYear(), forDate.getMonth() + 1, 0)
+    .toISOString()
+    .split("T")[0];
+
+  const counts = new Map<number, number>();
+  const PAGE_SIZE = 1000;
+  let skip = 0;
+  let totalCount = Infinity;
+
+  while (skip < totalCount) {
+    const res = await fetch(
+      `${SOS_BASE_URL}/Observations/Search?skip=${skip}&take=${PAGE_SIZE}`,
+      {
+        method: "POST",
+        headers: {
+          "Content-Type": "application/json",
+          "Ocp-Apim-Subscription-Key": getApiKey(),
+        },
+        body: JSON.stringify({
+          taxon: { ids: [BIRDS_TAXON_ID], includeUnderlyingTaxa: true },
+          date: {
+            startDate,
+            endDate,
+            dateFilterType: "BetweenStartDateAndEndDate",
+          },
+          geographics: {
+            geometries: [
+              { type: "point", coordinates: [longitude, latitude] },
+            ],
+            maxDistanceFromPoint: 15000,
+          },
+          output: { fieldSet: "Minimum" },
+        }),
+      },
+    );
+
+    if (!res.ok) break;
+    const data: ObservationSearchResponse = await res.json();
+    totalCount = data.totalCount;
+
+    for (const record of data.records) {
+      counts.set(record.taxon.id, (counts.get(record.taxon.id) ?? 0) + 1);
+    }
+
+    skip += PAGE_SIZE;
+  }
+
+  console.log(`[getAllReportCounts] Counted ${counts.size} species from ${skip} records (total: ${totalCount})`);
+  return counts;
 }
 
 export async function getTaxonName(
@@ -283,8 +345,11 @@ async function fetchAreaDistribution(
   thorough: boolean,
   cacheKey: string,
 ): Promise<AreaDistribution> {
-  // Fetch top 200 taxa for the area (given month, 15km radius)
+  // Fetch species list from TaxonAggregation (for species discovery + name resolution)
   const taxa = await getTopBirdTaxa(latitude, longitude, 200, date);
+
+  // Fetch actual report counts per species (not individual bird counts)
+  const reportCounts = await getAllReportCounts(latitude, longitude, date);
 
   // Resolve names — thorough mode uses individual fallbacks for full coverage
   const taxonIds = taxa.map((t) => t.taxonId);
@@ -298,7 +363,7 @@ async function fetchAreaDistribution(
         taxonId: t.taxonId,
         scientificName: names.scientificName,
         vernacularName: names.vernacularName,
-        observationCount: t.observationCount,
+        observationCount: reportCounts.get(t.taxonId) ?? 0,
       };
     })
     .filter((e): e is DistributionEntry => e !== null);

@@ -28,7 +28,7 @@ const HeroSkeleton = () => (
 
 const ListSkeleton = () => (
   <ul>
-    {Array.from({ length: 5 }).map((_, i) => (
+    {Array.from({ length: 3 }).map((_, i) => (
       <li
         key={i}
         className="flex items-center gap-3 border-b border-border/50 px-3 py-2 last:border-b-0"
@@ -42,6 +42,54 @@ const ListSkeleton = () => (
           <Skeleton className="h-4 w-8" />
           <Skeleton className="h-2.5 w-6" />
         </div>
+      </li>
+    ))}
+  </ul>
+);
+
+const BirdList = ({ birds, navigate }: { birds: NearbyBird[]; navigate: (path: string, opts?: object) => void }) => (
+  <ul>
+    {birds.map((bird) => (
+      <li key={bird.scientificName}>
+        <button
+          className="flex w-full items-center gap-3 border-b border-border/50 px-3 py-2 text-left last:border-b-0 active:bg-muted/50"
+          onClick={() =>
+            navigate(`/bird/${toSpeciesSlug(bird.scientificName)}`, {
+              state: { vernacularName: bird.vernacularName },
+            })
+          }
+        >
+          <div className="size-12 flex-shrink-0 overflow-hidden rounded-lg bg-primary/10">
+            {bird.imageUrl ? (
+              <img
+                src={proxyImageUrl(bird.imageUrl) ?? undefined}
+                alt={bird.vernacularName}
+                className="size-full object-cover"
+                onError={(e) => {
+                  e.currentTarget.style.display = "none";
+                  e.currentTarget.nextElementSibling?.classList.remove("hidden");
+                }}
+              />
+            ) : null}
+            <div
+              className={`${bird.imageUrl ? "hidden" : ""} flex size-full items-center justify-center`}
+            >
+              <BirdIcon className="size-5 text-primary/40" />
+            </div>
+          </div>
+          <div className="min-w-0 flex-1">
+            <p className="truncate font-medium capitalize leading-tight">
+              {bird.vernacularName}
+            </p>
+            <p className="truncate text-xs italic text-muted-foreground">
+              {bird.scientificName}
+            </p>
+          </div>
+          <div className="flex-shrink-0 text-right">
+            <p className="text-sm font-semibold text-primary">{bird.observationCount}</p>
+            <p className="text-[10px] text-muted-foreground">obs</p>
+          </div>
+        </button>
       </li>
     ))}
   </ul>
@@ -82,141 +130,94 @@ const IdentifyPage = () => {
     reader.readAsDataURL(file);
   };
 
-  const allCommon: NearbyBird[] = data?.nearbyBirds?.common ?? [];
-  const rareBird: NearbyBird | null = data?.nearbyBirds?.rare ?? null;
-
-  // When no rare bird, #1 common is used as hero — show the rest in the list
-  const hero = rareBird ?? allCommon[0] ?? null;
-  const birds = rareBird ? allCommon.slice(0, 5) : allCommon.slice(1, 6);
+  const hero: NearbyBird | null = data?.nearbyBirds?.hero ?? null;
+  const commonBirds: NearbyBird[] = data?.nearbyBirds?.common ?? [];
+  const uncommonBirds: NearbyBird[] = data?.nearbyBirds?.uncommon ?? [];
 
   const isLoading = !geoError && (loading || !latitude);
 
   return (
     <div className="flex min-h-[calc(100dvh-5rem-1rem)] flex-col gap-4">
-      {/* Hero card */}
+      {/* Hero card — rarest bird in the area */}
       {isLoading ? (
         <HeroSkeleton />
-      ) : (
-        hero &&
-        (() => {
-          const isRare = !!rareBird;
-          return (
-            <button
-              className="w-full overflow-hidden rounded-xl shadow-sm text-left active:scale-[0.98] transition-transform"
-              onClick={() =>
-                navigate(`/bird/${toSpeciesSlug(hero.scientificName)}`, {
-                  state: { vernacularName: hero.vernacularName },
-                })
-              }
+      ) : hero ? (
+        <button
+          className="w-full overflow-hidden rounded-xl shadow-sm text-left active:scale-[0.98] transition-transform"
+          onClick={() =>
+            navigate(`/bird/${toSpeciesSlug(hero.scientificName)}`, {
+              state: { vernacularName: hero.vernacularName },
+            })
+          }
+        >
+          <div className="flex h-32 items-center bg-amber-50">
+            {hero.imageUrl ? (
+              <img
+                src={proxyImageUrl(hero.imageUrl) ?? undefined}
+                alt={hero.vernacularName}
+                className="h-full w-28 flex-shrink-0 object-cover"
+                onError={(e) => {
+                  e.currentTarget.style.display = "none";
+                  e.currentTarget.nextElementSibling?.classList.remove("hidden");
+                }}
+              />
+            ) : null}
+            <div
+              className={`${hero.imageUrl ? "hidden" : ""} flex h-full w-28 flex-shrink-0 items-center justify-center bg-amber-100`}
             >
-              <div className={`flex h-32 items-center ${isRare ? "bg-amber-50" : "bg-primary/5"}`}>
-                {hero.imageUrl ? (
-                  <img
-                    src={proxyImageUrl(hero.imageUrl) ?? undefined}
-                    alt={hero.vernacularName}
-                    className="h-full w-28 flex-shrink-0 object-cover"
-                    onError={(e) => {
-                      e.currentTarget.style.display = "none";
-                      e.currentTarget.nextElementSibling?.classList.remove("hidden");
-                    }}
-                  />
-                ) : null}
-                <div
-                  className={`${hero.imageUrl ? "hidden" : ""} flex h-full w-28 flex-shrink-0 items-center justify-center ${isRare ? "bg-amber-100" : "bg-primary/10"}`}
-                >
-                  <BirdIcon className={`size-6 ${isRare ? "text-amber-600" : "text-primary"}`} />
-                </div>
-                <div className="flex flex-1 flex-col gap-1 px-4">
-                  <p
-                    className={`text-xs font-semibold uppercase tracking-wide ${isRare ? "text-amber-700" : "text-primary"}`}
-                  >
-                    {isRare ? "Ovanlig observation" : "Mest observerad just nu"}
-                  </p>
-                  <p className="font-medium capitalize leading-tight">{hero.vernacularName}</p>
-                  <p className="text-xs italic text-muted-foreground">{hero.scientificName}</p>
-                  <p className="text-xs text-muted-foreground">
-                    {hero.observationCount} obs denna månad
-                  </p>
-                </div>
-              </div>
-            </button>
-          );
-        })()
+              <BirdIcon className="size-6 text-amber-600" />
+            </div>
+            <div className="flex flex-1 flex-col gap-1 px-4">
+              <p className="text-xs font-semibold uppercase tracking-wide text-amber-700">
+                Ovanligast nära dig
+              </p>
+              <p className="font-medium capitalize leading-tight">{hero.vernacularName}</p>
+              <p className="text-xs italic text-muted-foreground">{hero.scientificName}</p>
+              <p className="text-xs text-muted-foreground">
+                {hero.observationCount} obs denna månad
+              </p>
+            </div>
+          </div>
+        </button>
+      ) : geoError ? (
+        <div className="flex h-32 flex-col items-center justify-center gap-2 rounded-xl bg-card shadow-sm">
+          <MapPinIcon className="size-5 text-muted-foreground" />
+          <p className="text-sm text-muted-foreground">Kunde inte hämta din position</p>
+          <p className="text-xs text-muted-foreground">Aktivera platstjänster för att se fåglar nära dig</p>
+        </div>
+      ) : null}
+
+      {/* Common birds */}
+      {(isLoading || commonBirds.length > 0) && (
+        <div>
+          <h2 className="mb-2 text-sm font-semibold uppercase tracking-wide text-muted-foreground">
+            Vanligast nära dig
+          </h2>
+          <div className="overflow-hidden rounded-xl bg-card shadow-sm">
+            {isLoading ? (
+              <ListSkeleton />
+            ) : (
+              <BirdList birds={commonBirds} navigate={navigate} />
+            )}
+          </div>
+        </div>
       )}
 
-      {/* Common birds list */}
-      <div>
-        <h2 className="mb-2 text-sm font-semibold uppercase tracking-wide text-muted-foreground">
-          Fåglar nära dig
-        </h2>
-        <div className="overflow-hidden rounded-xl bg-card shadow-sm">
-          {isLoading ? (
-            <ListSkeleton />
-          ) : birds.length === 0 ? (
-            <div className="flex h-40 flex-col items-center justify-center gap-2">
-              {geoError ? (
-                <>
-                  <MapPinIcon className="size-5 text-muted-foreground" />
-                  <p className="text-sm text-muted-foreground">
-                    Kunde inte hämta din position
-                  </p>
-                  <p className="text-xs text-muted-foreground">
-                    Aktivera platstjänster för att se fåglar nära dig
-                  </p>
-                </>
-              ) : (
-                <p className="text-sm text-muted-foreground">Inga fåglar hittades i närheten</p>
-              )}
-            </div>
-          ) : (
-            <ul>
-              {birds.map((bird) => (
-                <li key={bird.scientificName}>
-                  <button
-                    className="flex w-full items-center gap-3 border-b border-border/50 px-3 py-2 text-left last:border-b-0 active:bg-muted/50"
-                    onClick={() =>
-                      navigate(`/bird/${toSpeciesSlug(bird.scientificName)}`, {
-                        state: { vernacularName: bird.vernacularName },
-                      })
-                    }
-                  >
-                    <div className="size-12 flex-shrink-0 overflow-hidden rounded-lg bg-primary/10">
-                      {bird.imageUrl ? (
-                        <img
-                          src={proxyImageUrl(bird.imageUrl) ?? undefined}
-                          alt={bird.vernacularName}
-                          className="size-full object-cover"
-                          onError={(e) => {
-                            e.currentTarget.style.display = "none";
-                            e.currentTarget.nextElementSibling?.classList.remove("hidden");
-                          }}
-                        />
-                      ) : null}
-                      <div
-                        className={`${bird.imageUrl ? "hidden" : ""} flex size-full items-center justify-center`}
-                      >
-                        <BirdIcon className="size-5 text-primary/40" />
-                      </div>
-                    </div>
-                    <div className="min-w-0 flex-1">
-                      <p className="truncate font-medium capitalize leading-tight">
-                        {bird.vernacularName}
-                      </p>
-                      <p className="truncate text-xs italic text-muted-foreground">
-                        {bird.scientificName}
-                      </p>
-                    </div>
-                    <div className="flex-shrink-0 text-right">
-                      <p className="text-sm font-semibold text-primary">{bird.observationCount}</p>
-                      <p className="text-[10px] text-muted-foreground">obs</p>
-                    </div>
-                  </button>
-                </li>
-              ))}
-            </ul>
-          )}
+      {/* Uncommon birds */}
+      {(isLoading || uncommonBirds.length > 0) && (
+        <div>
+          <h2 className="mb-2 text-sm font-semibold uppercase tracking-wide text-muted-foreground">
+            Ovanliga nära dig
+          </h2>
+          <div className="overflow-hidden rounded-xl bg-card shadow-sm">
+            {isLoading ? (
+              <ListSkeleton />
+            ) : (
+              <BirdList birds={uncommonBirds} navigate={navigate} />
+            )}
+          </div>
         </div>
-      </div>
+      )}
 
       <input
         ref={fileInputRef}
