@@ -43,6 +43,10 @@ interface UpdateSightingArgs {
   date?: string;
 }
 
+// Cache nearby birds results for 24h per area grid cell
+const NEARBY_BIRDS_TTL = 24 * 60 * 60 * 1000;
+const nearbyBirdsCache = new Map<string, { result: unknown; fetchedAt: number }>();
+
 export const resolvers = {
   Species: {
     description: async (species: { id: string; scientificName: string; description: string | null }) => {
@@ -137,10 +141,16 @@ export const resolvers = {
       _: unknown,
       { latitude, longitude }: { latitude: number; longitude: number },
     ) => {
+      // Check cache first (24h per ~22km grid cell)
+      const cacheKey = `nearby_${Math.round(latitude * 5)}_${Math.round(longitude * 5)}`;
+      const cached = nearbyBirdsCache.get(cacheKey);
+      if (cached && Date.now() - cached.fetchedAt < NEARBY_BIRDS_TTL) {
+        return cached.result;
+      }
+
       const taxa = await getTopBirdTaxa(latitude, longitude);
 
-      // Pre-warm the rarity distribution cache after nearbyBirds data is fetched,
-      // with a delay to avoid hitting Artdatabanken rate limits
+      // Pre-warm the rarity distribution cache after nearbyBirds data is fetched
       setTimeout(() => getAreaDistribution(latitude, longitude).catch(() => {}), 3000);
       if (taxa.length === 0) return { common: [], rare: null };
 
@@ -189,7 +199,9 @@ export const resolvers = {
 
       const rare = rareTaxon ? byTaxon.get(rareTaxon.taxonId) ?? null : null;
 
-      return { common, rare };
+      const result = { common, rare };
+      nearbyBirdsCache.set(cacheKey, { result, fetchedAt: Date.now() });
+      return result;
     },
 
     speciesByScientificName: async (

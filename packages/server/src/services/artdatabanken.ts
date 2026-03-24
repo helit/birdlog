@@ -50,6 +50,9 @@ function getDistributionCacheKey(lat: number, lng: number, date: Date): string {
   return `${Math.round(lat * 5)}_${Math.round(lng * 5)}_${date.getFullYear()}-${date.getMonth()}`;
 }
 
+// Persistent in-memory cache for taxonId → name mappings (never expires — names don't change)
+const taxonNameCache = new Map<number, { scientificName: string; vernacularName: string }>();
+
 function getApiKey(): string {
   const key = process.env.ARTDATABANKEN_API_KEY;
   if (!key) throw new Error("ARTDATABANKEN_API_KEY not set");
@@ -103,6 +106,9 @@ export async function getTopBirdTaxa(
 export async function getTaxonName(
   taxonId: number,
 ): Promise<{ scientificName: string; vernacularName: string } | null> {
+  const cached = taxonNameCache.get(taxonId);
+  if (cached) return cached;
+
   const res = await fetch(
     `${SOS_BASE_URL}/Observations/Search?skip=0&take=1`,
     {
@@ -123,10 +129,12 @@ export async function getTaxonName(
   const data: ObservationSearchResponse = await res.json();
   if (data.records.length === 0) return null;
 
-  return {
+  const result = {
     scientificName: data.records[0].taxon.scientificName,
     vernacularName: data.records[0].taxon.vernacularName,
   };
+  taxonNameCache.set(taxonId, result);
+  return result;
 }
 
 export async function getWikipediaSummary(
@@ -177,7 +185,19 @@ async function bulkResolveTaxonNames(
   const nameMap = new Map<number, { scientificName: string; vernacularName: string }>();
   if (taxonIds.length === 0) return nameMap;
 
-  // Try to resolve many names in one bulk search call
+  // Check in-memory cache first
+  const uncached: number[] = [];
+  for (const id of taxonIds) {
+    const cached = taxonNameCache.get(id);
+    if (cached) {
+      nameMap.set(id, cached);
+    } else {
+      uncached.push(id);
+    }
+  }
+  if (uncached.length === 0) return nameMap;
+
+  // Try to resolve remaining names in one bulk search call
   const res = await fetch(
     `${SOS_BASE_URL}/Observations/Search?skip=0&take=1000`,
     {
@@ -187,7 +207,7 @@ async function bulkResolveTaxonNames(
         "Ocp-Apim-Subscription-Key": getApiKey(),
       },
       body: JSON.stringify({
-        taxon: { ids: taxonIds, includeUnderlyingTaxa: false },
+        taxon: { ids: uncached, includeUnderlyingTaxa: false },
         output: { fieldSet: "Minimum" },
       }),
     },
@@ -197,15 +217,18 @@ async function bulkResolveTaxonNames(
     const data: ObservationSearchResponse = await res.json();
     for (const record of data.records) {
       if (!nameMap.has(record.taxon.id)) {
-        nameMap.set(record.taxon.id, {
+        const names = {
           scientificName: record.taxon.scientificName,
           vernacularName: record.taxon.vernacularName,
-        });
+        };
+        nameMap.set(record.taxon.id, names);
+        taxonNameCache.set(record.taxon.id, names);
       }
     }
   }
 
   // In thorough mode (backfill), resolve missing taxa individually with delays
+  // getTaxonName already caches results in taxonNameCache
   if (thorough) {
     const missing = taxonIds.filter((id) => !nameMap.has(id));
     if (missing.length > 0) {

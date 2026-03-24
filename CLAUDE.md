@@ -402,16 +402,23 @@ since they all serve the same goal: contextual bird knowledge.
 
 ### Step 1: Rarity context [DONE]
 - Species rarity calculated from Artdatabanken observation data (TaxonAggregation endpoint)
-- `getAreaDistribution(lat, lng)` fetches top 200 species for area, resolves names via bulk Search call, caches 2h per grid cell (~22km)
+- `getAreaDistribution(lat, lng, { date?, thorough? })` fetches top 200 species for area, resolves names, caches 2h per grid cell (~22km)
 - `calculateSpeciesRarity()` ranks species by observation count into levels: very_common (top 10%), common (top 35%), uncommon (top 70%), rare (bottom 30%), not_observed
 - In-flight request deduplication prevents duplicate API calls
-- **Sightings**: rarity computed and stored in DB at creation time (snapshot) — 6 new columns on Sighting model (rarityLevel, rarityLabel, rarityDescription, rarityRank, rarityObservations, rarityTotalSpecies)
+- **Sightings**: rarity computed and stored in DB at creation time (snapshot, based on sighting date/location) — 6 new columns on Sighting model (rarityLevel, rarityLabel, rarityDescription, rarityRank, rarityObservations, rarityTotalSpecies)
 - **BirdInfoPage**: live rarity via RarityBadge component (uses browser geolocation, queries API)
 - **SightingDetailPage**: reads stored rarity from sighting data (instant, no API call)
 - Pre-warm: nearbyBirds resolver triggers distribution cache in background (3s delay to avoid rate limits)
-- Backfill script: `packages/server/scripts/backfill-rarity.ts` updates existing sightings
+- Backfill script: `packages/server/scripts/backfill-rarity.ts` — uses thorough mode (individual API fallbacks with delays) and sighting's own date
 - Color-coded display: emerald (very common), sky (common), amber (uncommon), rose (rare), gray (not observed)
 - GraphQL: `SpeciesRarity` type, `speciesRarity` query, rarity fields on `Sighting` type
+
+### Caching strategy
+- **Nearby birds**: 24h per ~22km grid cell — result cached in resolvers.ts (`nearbyBirdsCache`)
+- **Area distribution** (rarity): 2h per grid cell + month — cached in artdatabanken.ts (`distributionCache`)
+- **Taxon name mapping** (taxonId → scientificName): permanent in-memory — `taxonNameCache` in artdatabanken.ts, populated from all sources (nearbyBirds, bulk Search, individual lookups), improves coverage over time
+- **Species imageUrl/description**: cached in DB (Species table) — fetched lazily from Wikipedia on first access
+- Location-based caches automatically refresh when user moves to a new area (~22km grid)
 
 ### Step 2: Basic profile stats [TODO]
 - Small summary on ProfilePage: total sightings, unique species, member since
