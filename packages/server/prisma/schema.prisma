@@ -36,11 +36,17 @@ model Sighting {
   speciesId String
   latitude  Float
   longitude Float
-  location  String?
-  notes     String?
-  date      DateTime
-  createdAt DateTime @default(now())
-  updatedAt DateTime @updatedAt
+  location             String?
+  notes                String?
+  date                 DateTime
+  rarityLevel          String?
+  rarityLabel          String?
+  rarityDescription    String?
+  rarityRank           Int?
+  rarityObservations   Int?
+  rarityTotalSpecies   Int?
+  createdAt            DateTime @default(now())
+  updatedAt            DateTime @updatedAt
 
   @@index([userId])
   @@index([speciesId])

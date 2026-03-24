@@ -70,6 +70,37 @@ const SightingDetailPage = () => {
         </div>
       </div>
 
+      {sighting.rarityLevel && sighting.rarityLabel && (() => {
+        const levelColors: Record<string, { bg: string; text: string; dot: string }> = {
+          very_common: { bg: "bg-emerald-50", text: "text-emerald-700", dot: "bg-emerald-500" },
+          common: { bg: "bg-sky-50", text: "text-sky-700", dot: "bg-sky-500" },
+          uncommon: { bg: "bg-amber-50", text: "text-amber-700", dot: "bg-amber-500" },
+          rare: { bg: "bg-rose-50", text: "text-rose-700", dot: "bg-rose-500" },
+          not_observed: { bg: "bg-gray-50", text: "text-gray-500", dot: "bg-gray-400" },
+        };
+        const colors = levelColors[sighting.rarityLevel!] ?? levelColors.not_observed;
+        return (
+          <div className={`flex flex-col gap-1.5 rounded-lg p-3 ${colors.bg}`}>
+            <div className="flex items-center gap-2">
+              <span className={`size-2 rounded-full ${colors.dot}`} />
+              <span className={`text-sm font-semibold ${colors.text}`}>
+                {sighting.rarityLabel}
+              </span>
+              {sighting.rarityRank && (
+                <span className={`ml-auto text-xs ${colors.text} opacity-70`}>
+                  #{sighting.rarityRank} av {sighting.rarityTotalSpecies} arter
+                </span>
+              )}
+            </div>
+            {sighting.rarityDescription && (
+              <p className={`text-xs leading-relaxed ${colors.text} opacity-80`}>
+                {sighting.rarityDescription}
+              </p>
+            )}
+          </div>
+        );
+      })()}
+
       <div className="flex flex-col gap-3 rounded-lg bg-card p-4 shadow-sm">
         <div className="flex items-center justify-between">
           <span className="text-sm text-muted-foreground">Datum</span>

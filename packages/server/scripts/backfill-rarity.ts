@@ -1,0 +1,49 @@
+import { PrismaClient } from "@prisma/client";
+import { getAreaDistribution, calculateSpeciesRarity } from "../src/services/artdatabanken.js";
+
+const prisma = new PrismaClient();
+
+async function backfill() {
+  const sightings = await prisma.sighting.findMany({
+    where: { rarityLevel: null },
+    include: { species: true },
+    orderBy: { date: "desc" },
+  });
+
+  console.log(`Found ${sightings.length} sightings without rarity data`);
+
+  let updated = 0;
+  let failed = 0;
+
+  for (const sighting of sightings) {
+    try {
+      const distribution = await getAreaDistribution(sighting.latitude, sighting.longitude);
+      const rarity = calculateSpeciesRarity(sighting.species.scientificName, distribution);
+
+      await prisma.sighting.update({
+        where: { id: sighting.id },
+        data: {
+          rarityLevel: rarity.level,
+          rarityLabel: rarity.label,
+          rarityDescription: rarity.description,
+          rarityRank: rarity.rank,
+          rarityObservations: rarity.observationCount,
+          rarityTotalSpecies: rarity.totalSpeciesInArea,
+        },
+      });
+
+      updated++;
+      console.log(
+        `[${updated}/${sightings.length}] ${sighting.species.swedishName} → ${rarity.label}`,
+      );
+    } catch (err) {
+      failed++;
+      console.error(`Failed: ${sighting.species.swedishName} — ${err}`);
+    }
+  }
+
+  console.log(`\nDone. Updated: ${updated}, Failed: ${failed}`);
+  await prisma.$disconnect();
+}
+
+backfill();

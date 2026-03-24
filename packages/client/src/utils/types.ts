@@ -17,6 +17,12 @@ export interface Sighting {
   date: string;
   species: Species;
   createdAt: string;
+  rarityLevel?: string | null;
+  rarityLabel?: string | null;
+  rarityDescription?: string | null;
+  rarityRank?: number | null;
+  rarityObservations?: number | null;
+  rarityTotalSpecies?: number | null;
 }
 
 export interface SightingBySpecies {

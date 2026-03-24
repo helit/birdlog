@@ -20,6 +20,12 @@ export const typeDefs = gql`
     notes: String
     date: String!
     createdAt: String!
+    rarityLevel: String
+    rarityLabel: String
+    rarityDescription: String
+    rarityRank: Int
+    rarityObservations: Int
+    rarityTotalSpecies: Int
   }
 
   type User {
@@ -53,6 +59,15 @@ export const typeDefs = gql`
     rare: NearbyBird
   }
 
+  type SpeciesRarity {
+    level: String!
+    label: String!
+    description: String!
+    observationCount: Int
+    totalSpeciesInArea: Int!
+    rank: Int
+  }
+
   type Query {
     species: [Species!]!
     speciesById(id: ID!): Species
@@ -63,6 +78,7 @@ export const typeDefs = gql`
     myLifeList: [LifeListEntry!]!
     nearbyBirds(latitude: Float!, longitude: Float!): NearbyBirdsResult!
     speciesByScientificName(scientificName: String!, vernacularName: String): Species
+    speciesRarity(scientificName: String!, latitude: Float!, longitude: Float!): SpeciesRarity!
   }
 
   type Mutation {

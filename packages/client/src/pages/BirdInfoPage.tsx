@@ -5,6 +5,8 @@ import { ArrowLeftIcon, BirdIcon, PlusIcon } from "lucide-react";
 import { useLocation, useNavigate, useParams } from "react-router-dom";
 import { Button } from "@/components/ui/button";
 import LoadingScreen from "@/components/LoadingScreen";
+import RarityBadge from "@/components/RarityBadge";
+import { useEffect, useState } from "react";
 
 const BirdInfoPage = () => {
   const navigate = useNavigate();
@@ -12,6 +14,15 @@ const BirdInfoPage = () => {
   const { state } = useLocation();
   const decodedName = fromSpeciesSlug(scientificName ?? "");
   const vernacularName: string | undefined = state?.vernacularName;
+
+  const [coords, setCoords] = useState<{ lat: number; lng: number } | null>(null);
+
+  useEffect(() => {
+    navigator.geolocation.getCurrentPosition(
+      (pos) => setCoords({ lat: pos.coords.latitude, lng: pos.coords.longitude }),
+      () => {},
+    );
+  }, []);
 
   const { data, loading } = useQuery(SPECIES_BY_SCIENTIFIC_NAME, {
     variables: { scientificName: decodedName, vernacularName },
@@ -74,6 +85,14 @@ const BirdInfoPage = () => {
         <p className="text-sm leading-relaxed text-muted-foreground">
           {species.description}
         </p>
+      )}
+
+      {coords && (
+        <RarityBadge
+          scientificName={species.scientificName}
+          latitude={coords.lat}
+          longitude={coords.lng}
+        />
       )}
 
       {species.family && (

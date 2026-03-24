@@ -7,6 +7,8 @@ import {
   getTaxonName,
   getWikimediaImage,
   getWikipediaSummary,
+  getAreaDistribution,
+  calculateSpeciesRarity,
 } from "../services/artdatabanken.js";
 
 const prisma = new PrismaClient();
@@ -136,6 +138,10 @@ export const resolvers = {
       { latitude, longitude }: { latitude: number; longitude: number },
     ) => {
       const taxa = await getTopBirdTaxa(latitude, longitude);
+
+      // Pre-warm the rarity distribution cache after nearbyBirds data is fetched,
+      // with a delay to avoid hitting Artdatabanken rate limits
+      setTimeout(() => getAreaDistribution(latitude, longitude).catch(() => {}), 3000);
       if (taxa.length === 0) return { common: [], rare: null };
 
       // Top 6 most observed (hero card uses #1 when no rare bird, list shows the rest)
@@ -204,6 +210,14 @@ export const resolvers = {
       }
 
       return null;
+    },
+
+    speciesRarity: async (
+      _: unknown,
+      { scientificName, latitude, longitude }: { scientificName: string; latitude: number; longitude: number },
+    ) => {
+      const distribution = await getAreaDistribution(latitude, longitude);
+      return calculateSpeciesRarity(scientificName, distribution);
     },
 
     myLifeList: async (_: unknown, __: unknown, context: GraphQLContext) => {
@@ -283,6 +297,28 @@ export const resolvers = {
     ) => {
       const user = requireAuth(context.user);
 
+      // Look up the species to get its scientificName for rarity calculation
+      const species = await prisma.species.findUnique({ where: { id: speciesId } });
+
+      // Compute rarity at creation time — snapshot of how rare this bird is here right now
+      let rarityData: Record<string, unknown> = {};
+      if (species) {
+        try {
+          const distribution = await getAreaDistribution(latitude, longitude);
+          const rarity = calculateSpeciesRarity(species.scientificName, distribution);
+          rarityData = {
+            rarityLevel: rarity.level,
+            rarityLabel: rarity.label,
+            rarityDescription: rarity.description,
+            rarityRank: rarity.rank,
+            rarityObservations: rarity.observationCount,
+            rarityTotalSpecies: rarity.totalSpeciesInArea,
+          };
+        } catch {
+          // If rarity calculation fails (API down, rate limited), save sighting without it
+        }
+      }
+
       return await prisma.sighting.create({
         data: {
           speciesId,
@@ -292,6 +328,7 @@ export const resolvers = {
           notes,
           date: new Date(date),
           userId: user.id,
+          ...rarityData,
         },
         include: { species: true },
       });

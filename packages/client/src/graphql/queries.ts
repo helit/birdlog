@@ -55,6 +55,12 @@ export const MY_SIGHTINGS = gql`
       notes
       date
       createdAt
+      rarityLevel
+      rarityLabel
+      rarityDescription
+      rarityRank
+      rarityObservations
+      rarityTotalSpecies
     }
   }
 `;
@@ -103,6 +109,19 @@ export const SPECIES_BY_SCIENTIFIC_NAME = gql`
       family
       description
       imageUrl
+    }
+  }
+`;
+
+export const SPECIES_RARITY = gql`
+  query SpeciesRarity($scientificName: String!, $latitude: Float!, $longitude: Float!) {
+    speciesRarity(scientificName: $scientificName, latitude: $latitude, longitude: $longitude) {
+      level
+      label
+      description
+      observationCount
+      totalSpeciesInArea
+      rank
     }
   }
 `;

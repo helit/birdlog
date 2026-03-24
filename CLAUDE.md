@@ -1,7 +1,7 @@
 # BIRDLOG — Claude Project Context
 
 Last updated: 2026-03-24
-Current phase: Phase 6 DONE, UX audit done, Phase 7 next (Statistics & Insights)
+Current phase: Phase 6 DONE, UX audit done, Phase 7 next (Bird Intelligence)
 Phase 3 quiz: COMPLETED
 Phase 6 quiz: COMPLETED (5/8)
 Phase 7 (Notifications): SKIPPED — replaced with more valuable features
@@ -40,11 +40,10 @@ npm run dev              # runs both client + server from root
 4. Design & styling pass                     [DONE]
 5. Artdatabanken API integration             [DONE]
 6. AI bird identification (OpenAI API)       [DONE]
-7. Statistics & insights
+7. Bird intelligence (rarity, migration, seasonal context, hotspots)
 8. Bird dictionary / discover
-9. Weather & season context
-10. PWA & offline basics (deferred — do last if needed)
-11. Polish & portfolio prep
+9. PWA & offline basics (deferred — do last if needed)
+10. Polish & portfolio prep
 
 ## Phase Gate Rule
 
@@ -393,22 +392,54 @@ before proceeding. This reinforces learning and ensures concepts stick.
 - IdentifyPage: action buttons (wizard, plus, camera) vertically centered using `min-h` + `mt-auto`
 - Content container: `pt-4` top padding (replaces header margin)
 
-### TODO
-- Phase 7: Statistics & Insights
-- Phase 8: Bird dictionary / discover feature (builds on BirdInfoPage)
-- Phase 9: Weather & season context
+## Phase 7 — Bird Intelligence
+
+### Design philosophy
+The app is a field guide, not a fitness tracker. No streaks, no gamification, no engagement hooks.
+Focus on helping the user understand birds and their environment — rarity, migration, seasonal context, local activity.
+Merged the old Phase 7 (Statistics), Phase 8 (Bird dictionary), and Phase 9 (Weather & season) into one phase
+since they all serve the same goal: contextual bird knowledge.
+
+### Step 1: Rarity context [DONE]
+- Species rarity calculated from Artdatabanken observation data (TaxonAggregation endpoint)
+- `getAreaDistribution(lat, lng)` fetches top 200 species for area, resolves names via bulk Search call, caches 2h per grid cell (~22km)
+- `calculateSpeciesRarity()` ranks species by observation count into levels: very_common (top 10%), common (top 35%), uncommon (top 70%), rare (bottom 30%), not_observed
+- In-flight request deduplication prevents duplicate API calls
+- **Sightings**: rarity computed and stored in DB at creation time (snapshot) — 6 new columns on Sighting model (rarityLevel, rarityLabel, rarityDescription, rarityRank, rarityObservations, rarityTotalSpecies)
+- **BirdInfoPage**: live rarity via RarityBadge component (uses browser geolocation, queries API)
+- **SightingDetailPage**: reads stored rarity from sighting data (instant, no API call)
+- Pre-warm: nearbyBirds resolver triggers distribution cache in background (3s delay to avoid rate limits)
+- Backfill script: `packages/server/scripts/backfill-rarity.ts` updates existing sightings
+- Color-coded display: emerald (very common), sky (common), amber (uncommon), rose (rare), gray (not observed)
+- GraphQL: `SpeciesRarity` type, `speciesRarity` query, rarity fields on `Sighting` type
+
+### Step 2: Basic profile stats [TODO]
+- Small summary on ProfilePage: total sightings, unique species, member since
+- Pure database queries, no external API
+
+### Step 3: Migration & seasonal info [TODO]
+- Enrich species with resident/migrant status and typical arrival/departure periods
+- Show context like "Summer visitor, typically arrives in May" — note if sighting is early/late
+- Research needed: best data source for Swedish bird migration patterns
+
+### Step 4: Nearby hotspots [TODO]
+- "What's happening near me" — areas with high recent observation activity
+- Community data from Artdatabanken, not user's own data
+- New UI, new queries — most complex step
 
 ## Key Files (new)
 
 ### Server
-- `packages/server/src/services/artdatabanken.ts` — Artdatabanken + Wikimedia API service (getTopBirdTaxa, getTaxonName, getWikimediaImage, getWikipediaSummary)
+- `packages/server/src/services/artdatabanken.ts` — Artdatabanken + Wikimedia API service (getTopBirdTaxa, getTaxonName, getWikimediaImage, getWikipediaSummary, getAreaDistribution, calculateSpeciesRarity)
+- `packages/server/scripts/backfill-rarity.ts` — One-off script to backfill rarity data on existing sightings
 - `packages/server/src/services/openai.ts` — OpenAI GPT-4o bird identification (identifyBird, identifyBirdFromDescription, BirdIdentification, GuidedIdentificationResult)
 - `packages/server/src/index.ts` — Express server with Apollo GraphQL + REST endpoints (`/api/image-proxy`, `/api/identify`, `/api/identify/guided` with species upsert)
 - `packages/server/prisma/seed.ts` — ~250 Swedish bird species seed (upsert-based, safe to re-run)
 
 ### Client
 - `packages/client/src/pages/IdentifyPage.tsx` — Landing page with nearby birds (tappable hero + list) + action buttons + hidden file input for photo capture
-- `packages/client/src/pages/BirdInfoPage.tsx` — Species info page (image, description, family, "Spara som observation" button)
+- `packages/client/src/pages/BirdInfoPage.tsx` — Species info page (image, description, family, live rarity badge, "Spara som observation" button)
+- `packages/client/src/components/RarityBadge.tsx` — Live rarity badge component (queries API, color-coded, used on BirdInfoPage)
 - `packages/client/src/pages/PhotoIdentifyPage.tsx` — Photo identification page (photo overlay with top result, secondary results, in-page file picker for new photo)
 - `packages/client/src/pages/GuidedIdentifyPage.tsx` — Guided identification wizard (4-step: size, colors, habitat, notes → AI results with refinement tips)
 - `packages/client/src/pages/ProfilePage.tsx` — Profile/settings page (logout, future: edit profile, change password)
