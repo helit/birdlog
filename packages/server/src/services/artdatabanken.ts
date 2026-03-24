@@ -338,6 +338,11 @@ export async function getAreaDistribution(
   return promise;
 }
 
+// Species to exclude from all results (domesticated, non-wild populations)
+const EXCLUDED_SPECIES = new Set([
+  "columba livia", // Tamduva (Rock Dove / feral pigeon)
+]);
+
 async function fetchAreaDistribution(
   latitude: number,
   longitude: number,
@@ -366,7 +371,8 @@ async function fetchAreaDistribution(
         observationCount: reportCounts.get(t.taxonId) ?? 0,
       };
     })
-    .filter((e): e is DistributionEntry => e !== null);
+    .filter((e): e is DistributionEntry => e !== null)
+    .filter((e) => ![...EXCLUDED_SPECIES].some((ex) => e.scientificName.toLowerCase().includes(ex)));
 
   const distribution: AreaDistribution = {
     entries,
@@ -413,11 +419,11 @@ export function calculateSpeciesRarity(
 
   if (index === -1) {
     const description = tense === "past"
-      ? `Arten hade inte observerats i området${monthName ? ` under ${monthName}` : ""} — en ovanlig observation.`
-      : `Arten har inte observerats i detta område${monthName ? ` under ${monthName}` : ""}.`;
+      ? `Ingen annan hade rapporterat arten i området${monthName ? ` under ${monthName}` : ""} — ett unikt fynd!`
+      : `Arten har inte rapporterats i området${monthName ? ` under ${monthName}` : ""} — ett unikt fynd!`;
     return {
       level: "not_observed",
-      label: "Ej observerad",
+      label: "Unikt fynd",
       description,
       observationCount: null,
       totalSpeciesInArea: distribution.totalSpecies,
