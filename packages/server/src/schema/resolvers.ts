@@ -47,7 +47,11 @@ const nearbyBirdsCache = new Map<string, { result: unknown; fetchedAt: number }>
 
 export const resolvers = {
   Species: {
-    description: async (species: { id: string; scientificName: string; description: string | null }) => {
+    description: async (species: {
+      id: string;
+      scientificName: string;
+      description: string | null;
+    }) => {
       if (species.description) return species.description;
 
       const summary = await getWikipediaSummary(species.scientificName);
@@ -70,9 +74,7 @@ export const resolvers = {
       const imageUrl = wikimediaUrl;
 
       // Cache asynchronously — don't block the response
-      prisma.species
-        .update({ where: { id: species.id }, data: { imageUrl } })
-        .catch(() => {});
+      prisma.species.update({ where: { id: species.id }, data: { imageUrl } }).catch(() => {});
 
       return imageUrl;
     },
@@ -146,58 +148,63 @@ export const resolvers = {
         return cached.result;
       }
 
-      // Use distribution which now has accurate report counts
-      const distribution = await getAreaDistribution(latitude, longitude);
-      const entries = [...distribution.entries].sort(
-        (a, b) => b.observationCount - a.observationCount,
-      );
-      if (entries.length === 0) return { hero: null, common: [], uncommon: [] };
+      try {
+        // Use distribution which now has accurate report counts
+        const distribution = await getAreaDistribution(latitude, longitude);
+        const entries = [...distribution.entries].sort(
+          (a, b) => b.observationCount - a.observationCount,
+        );
+        if (entries.length === 0) return { hero: null, common: [], uncommon: [] };
 
-      // Common: top 3 most reported
-      const commonEntries = entries.slice(0, 3);
-      // Uncommon: least reported, but require at least 3 reports for credibility
-      const MIN_REPORTS = 3;
-      const credible = entries.filter((e) => e.observationCount >= MIN_REPORTS);
-      // Hero: least reported credible bird
-      const heroEntry = credible[credible.length - 1];
-      // Uncommon: next 3 least reported credible, excluding hero
-      const uncommonEntries = credible
-        .slice(-4, -1)
-        .reverse()
-        .filter((e) => e.taxonId !== heroEntry.taxonId);
+        // Common: top 3 most reported
+        const commonEntries = entries.slice(0, 3);
+        // Uncommon: least reported, but require at least 3 reports for credibility
+        const MIN_REPORTS = 3;
+        const credible = entries.filter((e) => e.observationCount >= MIN_REPORTS);
+        // Hero: least reported credible bird
+        const heroEntry = credible[credible.length - 1];
+        // Uncommon: next 3 least reported credible, excluding hero
+        const uncommonEntries = credible
+          .slice(-4, -1)
+          .reverse()
+          .filter((e) => e.taxonId !== heroEntry.taxonId);
 
-      // Deduplicate and resolve images for the 7 selected birds
-      const allEntries = [...commonEntries, ...uncommonEntries, heroEntry];
-      const uniqueEntries = [...new Map(allEntries.map((e) => [e.taxonId, e])).values()];
+        // Deduplicate and resolve images for the 7 selected birds
+        const allEntries = [...commonEntries, ...uncommonEntries, heroEntry];
+        const uniqueEntries = [...new Map(allEntries.map((e) => [e.taxonId, e])).values()];
 
-      const resolved = await Promise.all(
-        uniqueEntries.map(async (e) => {
-          const imageUrl = await getWikimediaImage(e.scientificName);
-          return {
-            taxonId: e.taxonId,
-            scientificName: e.scientificName,
-            vernacularName: e.vernacularName,
-            imageUrl,
-            observationCount: e.observationCount,
-          };
-        }),
-      );
+        const resolved = await Promise.all(
+          uniqueEntries.map(async (e) => {
+            const imageUrl = await getWikimediaImage(e.scientificName);
+            return {
+              taxonId: e.taxonId,
+              scientificName: e.scientificName,
+              vernacularName: e.vernacularName,
+              imageUrl,
+              observationCount: e.observationCount,
+            };
+          }),
+        );
 
-      const byTaxon = new Map(
-        resolved.filter((b) => b !== null).map((b) => [b.taxonId, b]),
-      );
+        const byTaxon = new Map(resolved.filter((b) => b !== null).map((b) => [b.taxonId, b]));
 
-      const hero = byTaxon.get(heroEntry.taxonId) ?? null;
-      const common = commonEntries
-        .map((e) => byTaxon.get(e.taxonId))
-        .filter((b) => b !== undefined);
-      const uncommon = uncommonEntries
-        .map((e) => byTaxon.get(e.taxonId))
-        .filter((b) => b !== undefined);
+        const hero = byTaxon.get(heroEntry.taxonId) ?? null;
+        const common = commonEntries
+          .map((e) => byTaxon.get(e.taxonId))
+          .filter((b) => b !== undefined);
+        const uncommon = uncommonEntries
+          .map((e) => byTaxon.get(e.taxonId))
+          .filter((b) => b !== undefined);
 
-      const result = { hero, common, uncommon };
-      nearbyBirdsCache.set(cacheKey, { result, fetchedAt: Date.now() });
-      return result;
+        const result = { hero, common, uncommon };
+        nearbyBirdsCache.set(cacheKey, { result, fetchedAt: Date.now() });
+        return result;
+      } catch (error) {
+        console.error("nearbyBirds failed:", error);
+        // Return stale cache if available, otherwise empty fallback
+        if (cached) return cached.result;
+        return { hero: null, common: [], uncommon: [] };
+      }
     },
 
     speciesByScientificName: async (
@@ -222,7 +229,11 @@ export const resolvers = {
 
     speciesRarity: async (
       _: unknown,
-      { scientificName, latitude, longitude }: { scientificName: string; latitude: number; longitude: number },
+      {
+        scientificName,
+        latitude,
+        longitude,
+      }: { scientificName: string; latitude: number; longitude: number },
     ) => {
       const distribution = await getAreaDistribution(latitude, longitude);
       return calculateSpeciesRarity(scientificName, distribution);

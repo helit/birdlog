@@ -404,13 +404,16 @@ since they all serve the same goal: contextual bird knowledge.
 - Species rarity calculated from Artdatabanken observation data (TaxonAggregation endpoint)
 - `getAreaDistribution(lat, lng, { date?, thorough? })` fetches top 200 species for area, resolves names, caches 2h per grid cell (~22km)
 - `calculateSpeciesRarity()` ranks species by observation count into levels: very_common (top 10%), common (top 35%), uncommon (top 70%), rare (bottom 30%), not_observed
+- **Tense-aware descriptions**: `calculateSpeciesRarity()` accepts `{ tense, month }` options — past tense for stored sightings ("Observerades regelbundet i området i mars"), present tense for live data ("Observeras regelbundet i området just nu")
+- **"Unikt fynd"**: `not_observed` level renamed from "Ej observerad" to "Unikt fynd" with violet color — highlights when user spotted a bird no one else reported in the area that month
 - In-flight request deduplication prevents duplicate API calls
 - **Sightings**: rarity computed and stored in DB at creation time (snapshot, based on sighting date/location) — 6 new columns on Sighting model (rarityLevel, rarityLabel, rarityDescription, rarityRank, rarityObservations, rarityTotalSpecies)
-- **BirdInfoPage**: live rarity via RarityBadge component (uses browser geolocation, queries API)
-- **SightingDetailPage**: reads stored rarity from sighting data (instant, no API call)
+- **BirdInfoPage**: live rarity via RarityBadge component (uses browser geolocation, queries API, present tense)
+- **SightingDetailPage**: reads stored rarity from sighting data (instant, no API call, past tense)
 - Pre-warm: nearbyBirds resolver triggers distribution cache in background (3s delay to avoid rate limits)
-- Backfill script: `packages/server/scripts/backfill-rarity.ts` — uses thorough mode (individual API fallbacks with delays) and sighting's own date
-- Color-coded display: emerald (very common), sky (common), amber (uncommon), rose (rare), gray (not observed)
+- Backfill script: `packages/server/scripts/backfill-rarity.ts` — uses thorough mode (individual API fallbacks with delays) and sighting's own date, supports `--retry` flag for failed entries
+- **Excluded species**: `EXCLUDED_SPECIES` set in artdatabanken.ts filters out domesticated species (e.g. Columba livia / tamduva) from all results
+- Color-coded display: emerald (very common), sky (common), amber (uncommon), rose (rare), violet (unikt fynd)
 - GraphQL: `SpeciesRarity` type, `speciesRarity` query, rarity fields on `Sighting` type
 
 ### Nearby birds redesign (2026-03-24) [DONE]
