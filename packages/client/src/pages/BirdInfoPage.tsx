@@ -20,11 +20,13 @@ const BirdInfoPage = () => {
   useEffect(() => {
     navigator.geolocation.getCurrentPosition(
       (pos) => setCoords({ lat: pos.coords.latitude, lng: pos.coords.longitude }),
-      () => {},
+      () => {
+        // No coords = rarity badge won't show, which is acceptable
+      },
     );
   }, []);
 
-  const { data, loading } = useQuery(SPECIES_BY_SCIENTIFIC_NAME, {
+  const { data, loading, error } = useQuery(SPECIES_BY_SCIENTIFIC_NAME, {
     variables: { scientificName: decodedName, vernacularName },
     skip: !decodedName,
   });
@@ -33,7 +35,7 @@ const BirdInfoPage = () => {
 
   if (loading) return <LoadingScreen />;
 
-  if (!species) {
+  if (error || !species) {
     return (
       <div className="text-center text-muted-foreground">
         <p>Art hittades inte.</p>

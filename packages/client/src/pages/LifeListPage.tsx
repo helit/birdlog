@@ -27,9 +27,10 @@ const LifeListSkeleton = () => (
 );
 
 const LifeListPage = () => {
-  const { data, loading } = useQuery(MY_LIFE_LIST);
+  const { data, loading, error } = useQuery(MY_LIFE_LIST);
 
   if (loading) return <LifeListSkeleton />;
+  if (error) return <p className="p-4 text-center text-sm text-muted-foreground">Något gick fel. Försök igen senare.</p>;
 
   const lifeList = data?.myLifeList ?? [];
 

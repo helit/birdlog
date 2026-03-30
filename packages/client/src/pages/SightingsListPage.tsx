@@ -25,9 +25,10 @@ const groupByMonth = (sightings: Sighting[]) => {
 };
 
 const SightingsListPage = () => {
-  const { data, loading } = useQuery(MY_SIGHTINGS);
+  const { data, loading, error } = useQuery(MY_SIGHTINGS);
 
   if (loading) return <LoadingScreen />;
+  if (error) return <p className="p-4 text-center text-sm text-muted-foreground">Något gick fel. Försök igen senare.</p>;
 
   const sightings = data?.mySightings ?? [];
 

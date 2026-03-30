@@ -63,10 +63,15 @@ const SightingFormPage = () => {
 
   useEffect(() => {
     if (!sighting && !pickedLocation) {
-      navigator.geolocation.getCurrentPosition((pos) => {
-        setLatitude(Number(pos.coords.latitude.toFixed(4)));
-        setLongitude(Number(pos.coords.longitude.toFixed(4)));
-      });
+      navigator.geolocation.getCurrentPosition(
+        (pos) => {
+          setLatitude(Number(pos.coords.latitude.toFixed(4)));
+          setLongitude(Number(pos.coords.longitude.toFixed(4)));
+        },
+        () => {
+          toast.error("Kunde inte hämta din position. Ange koordinater manuellt.");
+        },
+      );
     }
   }, []);
 
@@ -172,10 +177,15 @@ const SightingFormPage = () => {
               size="sm"
               className="flex-1"
               onClick={() => {
-                navigator.geolocation.getCurrentPosition((pos) => {
-                  setLatitude(Number(pos.coords.latitude.toFixed(4)));
-                  setLongitude(Number(pos.coords.longitude.toFixed(4)));
-                });
+                navigator.geolocation.getCurrentPosition(
+                  (pos) => {
+                    setLatitude(Number(pos.coords.latitude.toFixed(4)));
+                    setLongitude(Number(pos.coords.longitude.toFixed(4)));
+                  },
+                  () => {
+                    toast.error("Kunde inte hämta din position.");
+                  },
+                );
               }}
             >
               Nuvarande position

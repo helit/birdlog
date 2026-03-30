@@ -22,7 +22,7 @@ const LifeListDetailPage = () => {
       .join(", ");
   };
 
-  const { data, loading } = useQuery(MY_SIGHTINGS_BY_SPECIES, {
+  const { data, loading, error } = useQuery(MY_SIGHTINGS_BY_SPECIES, {
     variables: { speciesId: lifeList?.species.id },
     skip: !lifeList,
   });
@@ -119,6 +119,8 @@ const LifeListDetailPage = () => {
 
       {loading ? (
         <Spinner />
+      ) : error ? (
+        <p className="text-center text-sm text-muted-foreground">Kunde inte hämta observationer.</p>
       ) : data?.mySightingsBySpecies.length > 0 ? (
         <div className="flex flex-col gap-2">
           <h2 className="text-sm font-semibold text-muted-foreground">Observationer</h2>

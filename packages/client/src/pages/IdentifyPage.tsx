@@ -103,7 +103,7 @@ const IdentifyPage = () => {
   const [longitude, setLongitude] = useState<number | null>(null);
   const [geoError, setGeoError] = useState(false);
 
-  const { data, loading } = useQuery(NEARBY_BIRDS, {
+  const { data, loading, error } = useQuery(NEARBY_BIRDS, {
     variables: { latitude, longitude },
     skip: !latitude,
   });
@@ -134,7 +134,7 @@ const IdentifyPage = () => {
   const commonBirds: NearbyBird[] = data?.nearbyBirds?.common ?? [];
   const uncommonBirds: NearbyBird[] = data?.nearbyBirds?.uncommon ?? [];
 
-  const isLoading = !geoError && (loading || !latitude);
+  const isLoading = !geoError && !error && (loading || !latitude);
 
   return (
     <div className="flex min-h-[calc(100dvh-5rem-1rem)] flex-col gap-4">
@@ -184,6 +184,11 @@ const IdentifyPage = () => {
           <MapPinIcon className="size-5 text-muted-foreground" />
           <p className="text-sm text-muted-foreground">Kunde inte hämta din position</p>
           <p className="text-xs text-muted-foreground">Aktivera platstjänster för att se fåglar nära dig</p>
+        </div>
+      ) : error ? (
+        <div className="flex h-32 flex-col items-center justify-center gap-2 rounded-xl bg-card shadow-sm">
+          <BirdIcon className="size-5 text-muted-foreground" />
+          <p className="text-sm text-muted-foreground">Kunde inte hämta fåglar nära dig</p>
         </div>
       ) : null}
 

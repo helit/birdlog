@@ -8,7 +8,7 @@ import { BinocularsIcon, BirdIcon, CalendarIcon, ChevronRightIcon, KeyRoundIcon,
 
 const ProfilePage = () => {
   const { user, logout } = useAuth();
-  const { data } = useQuery(MY_STATS);
+  const { data, error } = useQuery(MY_STATS);
   const stats = data?.myStats;
 
   return (
@@ -22,6 +22,10 @@ const ProfilePage = () => {
           <p className="text-sm text-muted-foreground">{user?.email}</p>
         </div>
       </div>
+
+      {error && (
+        <p className="text-center text-sm text-muted-foreground">Kunde inte hämta statistik.</p>
+      )}
 
       {stats && (
         <div className="grid grid-cols-3 gap-3">
