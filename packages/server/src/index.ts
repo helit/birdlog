@@ -78,6 +78,7 @@ app.get(
 
     const response = await fetch(url, {
       headers: { "User-Agent": "BirdLog/1.0 (henrik@henlit.se)" },
+      signal: AbortSignal.timeout(10_000),
     });
     if (!response.ok) {
       res.status(response.status).send("Failed to fetch image");

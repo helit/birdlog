@@ -82,6 +82,7 @@ export async function getTopBirdTaxa(
         "Content-Type": "application/json",
         "Ocp-Apim-Subscription-Key": getApiKey(),
       },
+      signal: AbortSignal.timeout(5000),
       body: JSON.stringify({
         taxon: { ids: [BIRDS_TAXON_ID], includeUnderlyingTaxa: true },
         date: {
@@ -132,6 +133,7 @@ async function getAllReportCounts(
           "Content-Type": "application/json",
           "Ocp-Apim-Subscription-Key": getApiKey(),
         },
+        signal: AbortSignal.timeout(5000),
         body: JSON.stringify({
           taxon: { ids: [BIRDS_TAXON_ID], includeUnderlyingTaxa: true },
           date: {
@@ -179,6 +181,7 @@ export async function getTaxonName(
         "Content-Type": "application/json",
         "Ocp-Apim-Subscription-Key": getApiKey(),
       },
+      signal: AbortSignal.timeout(5000),
       body: JSON.stringify({
         taxon: { ids: [taxonId] },
         output: { fieldSet: "Minimum" },
@@ -207,7 +210,7 @@ export async function getWikipediaSummary(
     const slug = scientificName.replace(/ /g, "_");
     const res = await fetch(
       `https://${lang}.wikipedia.org/api/rest_v1/page/summary/${slug}`,
-      { headers: { "User-Agent": "BirdLog/1.0 (henrik@henlit.se)" } },
+      { headers: { "User-Agent": "BirdLog/1.0 (henrik@henlit.se)" }, signal: AbortSignal.timeout(10_000) },
     );
 
     if (!res.ok) continue;
@@ -225,7 +228,7 @@ export async function getWikimediaImage(
   const slug = scientificName.replace(/ /g, "_");
   const res = await fetch(
     `https://en.wikipedia.org/api/rest_v1/page/summary/${slug}`,
-    { headers: { "User-Agent": "BirdLog/1.0 (henrik@henlit.se)" } },
+    { headers: { "User-Agent": "BirdLog/1.0 (henrik@henlit.se)" }, signal: AbortSignal.timeout(10_000) },
   );
 
   if (!res.ok) return null;
@@ -268,6 +271,7 @@ async function bulkResolveTaxonNames(
         "Content-Type": "application/json",
         "Ocp-Apim-Subscription-Key": getApiKey(),
       },
+      signal: AbortSignal.timeout(5000),
       body: JSON.stringify({
         taxon: { ids: uncached, includeUnderlyingTaxa: false },
         output: { fieldSet: "Minimum" },
