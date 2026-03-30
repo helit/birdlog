@@ -150,6 +150,8 @@ const SightingFormPage = () => {
             <Input
               type="number"
               step="0.0001"
+              min={-90}
+              max={90}
               placeholder="Latitud"
               value={latitude ?? ""}
               onChange={(e) =>
@@ -159,6 +161,8 @@ const SightingFormPage = () => {
             <Input
               type="number"
               step="0.0001"
+              min={-180}
+              max={180}
               placeholder="Longitud"
               value={longitude ?? ""}
               onChange={(e) =>
@@ -270,7 +274,17 @@ const SightingFormPage = () => {
               console.error(error);
             }
           }}
-          disabled={saving || !speciesId || !latitude || !longitude || !date}
+          disabled={
+            saving ||
+            !speciesId ||
+            !latitude ||
+            !longitude ||
+            !date ||
+            latitude < -90 ||
+            latitude > 90 ||
+            longitude < -180 ||
+            longitude > 180
+          }
         >
           {saving || updating ? "Sparar..." : id ? "Uppdatera observation" : "Spara observation"}
         </Button>

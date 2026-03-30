@@ -11,6 +11,14 @@ import { identifyBird, identifyBirdFromDescription } from "./services/openai.js"
 import { getWikimediaImage } from "./services/artdatabanken.js";
 import { PrismaClient } from "@prisma/client";
 
+// Fail fast if required env vars are missing
+const REQUIRED_ENV = ["JWT_SECRET", "OPENAI_API_KEY", "ARTDATABANKEN_API_KEY"] as const;
+const missing = REQUIRED_ENV.filter((key) => !process.env[key]);
+if (missing.length > 0) {
+  console.error(`Missing required environment variables: ${missing.join(", ")}`);
+  process.exit(1);
+}
+
 const prisma = new PrismaClient();
 
 const app = express();
