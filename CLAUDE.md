@@ -1,7 +1,7 @@
 # BIRDLOG — Claude Project Context
 
 Last updated: 2026-03-30
-Current phase: Phase 7 in progress (Bird Intelligence) — Step 1 done, Step 2 done, Step 3 next
+Current phase: Phase 7b — Hardening & Quality Pass (from UX/Design/Code/Devil's Advocate analysis)
 Phase 3 quiz: COMPLETED
 Phase 6 quiz: COMPLETED (5/8)
 Phase 7 (Notifications): SKIPPED — replaced with more valuable features
@@ -40,7 +40,9 @@ npm run dev              # runs both client + server from root
 4. Design & styling pass                     [DONE]
 5. Artdatabanken API integration             [DONE]
 6. AI bird identification (OpenAI API)       [DONE]
-7. Bird intelligence (rarity, migration, seasonal context, hotspots)
+7. Bird intelligence (rarity + stats)        [DONE — Steps 1-2]
+7b. **Hardening & quality pass**             [IN PROGRESS]
+7c. Bird intelligence continued (migration, seasonal, hotspots) [PAUSED — needs data source research]
 8. Bird dictionary / discover
 9. PWA & offline basics (deferred — do last if needed)
 10. Polish & portfolio prep
@@ -447,15 +449,75 @@ since they all serve the same goal: contextual bird knowledge.
 - ProfilePage: 3 stat boxes in a row (observations count, unique species count, member since formatted as "MMM yyyy")
 - Client: `MY_STATS` query in queries.ts
 
-### Step 3: Migration & seasonal info [TODO]
+### Step 3: Migration & seasonal info [PAUSED — moved to Phase 7c]
 - Enrich species with resident/migrant status and typical arrival/departure periods
 - Show context like "Summer visitor, typically arrives in May" — note if sighting is early/late
 - Research needed: best data source for Swedish bird migration patterns
+- **Paused reason**: Hardening pass (7b) takes priority. No data source identified yet.
 
-### Step 4: Nearby hotspots [TODO]
+### Step 4: Nearby hotspots [PAUSED — moved to Phase 7c]
 - "What's happening near me" — areas with high recent observation activity
 - Community data from Artdatabanken, not user's own data
 - New UI, new queries — most complex step
+- **Paused reason**: Hardening pass (7b) takes priority. Needs design work.
+
+## Phase 7b — Hardening & Quality Pass
+
+Full-app analysis conducted 2026-03-30 by four parallel agent reviews (UX, Design, Code quality, Devil's advocate).
+This phase addresses the most impactful findings before adding new features.
+
+### Step 1: Error handling & resilience [TODO]
+- Add `onError` handler to AuthContext — invalidate token on auth failure (app currently hangs)
+- Add error/loading handling to all `useQuery`/`useMutation` calls (ProfilePage, SightingFormPage, etc.)
+- Replace silent `.catch(() => {})` on DB cache updates with `console.error` logging
+- Add contextual error messages on identification endpoints (network vs timeout vs rate limit vs no bird found)
+- Add request timeouts to fetch calls (5s Artdatabanken, 30s OpenAI, 10s Wikipedia)
+- Handle geolocation errors visibly in BirdInfoPage and SightingFormPage (currently silent)
+
+### Step 2: Input validation [TODO]
+- Server: validate GraphQL mutation inputs (lat ±90, lng ±180, date format, string length limits)
+- Consider Zod for schema validation on server
+- Server: validate env vars at startup (JWT_SECRET, OPENAI_API_KEY, etc.) — fail fast if missing
+- Client: validate coordinate input on SightingFormPage
+
+### Step 3: Accessibility & mobile UX [TODO]
+- Add `aria-label` to all icon-only buttons (BottomNav tabs, IdentifyPage action buttons, back buttons)
+- Increase BottomNav touch targets to 44-48px minimum
+- Add confirm dialog before sighting deletion (SightingDetailPage)
+- Blur inputs on form submit (dismiss mobile keyboard)
+- Add `role="tab"` and `aria-selected` to BottomNav
+
+### Step 4: Code quality & DRY [TODO]
+- Extract duplicated `levelColors` from RarityBadge.tsx and SightingDetailPage.tsx → shared util
+- Extract duplicated species enrichment logic from `/api/identify` and `/api/identify/guided` → `services/speciesEnrichment.ts`
+- Extract shared list item pattern from SightingCard + LifeListCard → reusable component (evaluate if worth it)
+- Change BottomNav `bg-white` to `bg-card` for theme consistency
+
+### Step 5: Testing [TODO]
+- Set up Vitest for server (unit tests)
+- Test `calculateSpeciesRarity()` with sample distributions
+- Test sighting CRUD resolvers with auth checks
+- Set up Vitest + React Testing Library for client (optional, lower priority)
+- Consider one E2E test: register → identify → log sighting → view in life list
+
+### Step 6: Production hardening [TODO]
+- Add `/health` endpoint on server
+- Add structured logging (replace scattered console.log/console.error)
+- Document DB backup strategy for TrueNAS PostgreSQL volume
+- Add React Error Boundary to catch page-level crashes gracefully
+
+### Design & polish improvements (lower priority, do alongside or after)
+- Add `transition-all duration-150` to interactive elements (buttons, list items)
+- Add fade-in animation when skeleton → content transitions
+- Verify rarity badge color contrast (amber-700 on amber-50) meets WCAG AA
+- Improve image loading (opacity transition on load, prevent layout shift)
+
+### Analysis findings deferred to later phases
+- **Unsaved changes warning** (useBlocker on forms) — nice-to-have, not blocking
+- **Route state persistence** (detail pages break on refresh) — acceptable for now, fix in polish phase
+- **GraphQL Code Generator** — already in Future TODO, do in polish phase
+- **Pagination** on queries — not needed at current scale (<1000 sightings)
+- **PWA/offline** — stays in Phase 9
 
 ## Key Files (new)
 
@@ -518,3 +580,8 @@ since they all serve the same goal: contextual bird knowledge.
 ## Future TODO
 
 - Set up GraphQL Code Generator to auto-generate TypeScript types from the schema (no intellisense/autocomplete on GQL responses currently)
+- Cross-check AI identification results against species DB before upsert (validate swedishName ↔ scientificName match)
+- Consider extracting resolver business logic into service layer (resolvers.ts is growing large)
+- Document rationale for REST vs GraphQL split (image uploads + large payloads justify REST for /api/identify)
+- CI/CD pipeline (GitHub Actions: lint, test, build, deploy)
+- Database backup automation for TrueNAS
