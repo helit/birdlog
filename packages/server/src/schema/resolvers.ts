@@ -41,6 +41,28 @@ interface UpdateSightingArgs {
   date?: string;
 }
 
+function validateCoordinates(latitude?: number, longitude?: number) {
+  if (latitude !== undefined && (latitude < -90 || latitude > 90)) {
+    throw new GraphQLError("Latitude must be between -90 and 90");
+  }
+  if (longitude !== undefined && (longitude < -180 || longitude > 180)) {
+    throw new GraphQLError("Longitude must be between -180 and 180");
+  }
+}
+
+function validateDate(date: string) {
+  const parsed = new Date(date);
+  if (isNaN(parsed.getTime())) {
+    throw new GraphQLError("Invalid date format");
+  }
+}
+
+function validateStringLength(value: string | null | undefined, field: string, max: number) {
+  if (value && value.length > max) {
+    throw new GraphQLError(`${field} must be ${max} characters or fewer`);
+  }
+}
+
 // Cache nearby birds results for 24h per area grid cell
 const NEARBY_BIRDS_TTL = 24 * 60 * 60 * 1000;
 const nearbyBirdsCache = new Map<string, { result: unknown; fetchedAt: number }>();
@@ -305,6 +327,11 @@ export const resolvers = {
 
   Mutation: {
     register: async (_: unknown, { email, name, password }: RegisterArgs) => {
+      validateStringLength(name, "Name", 100);
+      validateStringLength(email, "Email", 255);
+      validateStringLength(password, "Password", 255);
+      if (password.length < 6) throw new GraphQLError("Password must be at least 6 characters");
+
       const existing = await prisma.user.findUnique({ where: { email } });
       if (existing) throw new GraphQLError("Email already in use");
 
@@ -331,6 +358,10 @@ export const resolvers = {
       context: GraphQLContext,
     ) => {
       const user = requireAuth(context.user);
+      validateCoordinates(latitude, longitude);
+      validateDate(date);
+      validateStringLength(location, "Location", 500);
+      validateStringLength(notes, "Notes", 2000);
 
       // Look up the species to get its scientificName for rarity calculation
       const species = await prisma.species.findUnique({ where: { id: speciesId } });
@@ -388,6 +419,11 @@ export const resolvers = {
         throw new GraphQLError("Not authorized", {
           extensions: { code: "FORBIDDEN" },
         });
+
+      validateCoordinates(latitude, longitude);
+      if (date !== undefined) validateDate(date);
+      validateStringLength(location, "Location", 500);
+      validateStringLength(notes, "Notes", 2000);
 
       const data: Record<string, unknown> = {};
       if (speciesId !== undefined) data.speciesId = speciesId;
