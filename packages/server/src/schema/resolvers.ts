@@ -239,6 +239,22 @@ export const resolvers = {
       return calculateSpeciesRarity(scientificName, distribution);
     },
 
+    myStats: async (_: unknown, __: unknown, context: GraphQLContext) => {
+      const user = requireAuth(context.user);
+
+      const [totalSightings, uniqueSpecies, dbUser] = await Promise.all([
+        prisma.sighting.count({ where: { userId: user.id } }),
+        prisma.sighting.groupBy({ by: ["speciesId"], where: { userId: user.id } }).then((g) => g.length),
+        prisma.user.findUnique({ where: { id: user.id }, select: { createdAt: true } }),
+      ]);
+
+      return {
+        totalSightings,
+        uniqueSpecies,
+        memberSince: dbUser!.createdAt.toISOString(),
+      };
+    },
+
     myLifeList: async (_: unknown, __: unknown, context: GraphQLContext) => {
       const user = requireAuth(context.user);
 

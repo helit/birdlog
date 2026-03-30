@@ -99,6 +99,16 @@ export const MY_LIFE_LIST = gql`
   }
 `;
 
+export const MY_STATS = gql`
+  query MyStats {
+    myStats {
+      totalSightings
+      uniqueSpecies
+      memberSince
+    }
+  }
+`;
+
 export const SPECIES_BY_SCIENTIFIC_NAME = gql`
   query SpeciesByScientificName($scientificName: String!, $vernacularName: String) {
     speciesByScientificName(scientificName: $scientificName, vernacularName: $vernacularName) {

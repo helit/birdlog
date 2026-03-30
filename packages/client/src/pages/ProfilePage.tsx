@@ -1,9 +1,15 @@
 import { Button } from "@/components/ui/button";
 import { useAuth } from "@/context/AuthContext";
-import { ChevronRightIcon, KeyRoundIcon, LogOutIcon, UserIcon } from "lucide-react";
+import { MY_STATS } from "@/graphql/queries";
+import { useQuery } from "@apollo/client";
+import { format } from "date-fns";
+import { sv } from "date-fns/locale";
+import { BinocularsIcon, BirdIcon, CalendarIcon, ChevronRightIcon, KeyRoundIcon, LogOutIcon, UserIcon } from "lucide-react";
 
 const ProfilePage = () => {
   const { user, logout } = useAuth();
+  const { data } = useQuery(MY_STATS);
+  const stats = data?.myStats;
 
   return (
     <div className="flex flex-col gap-6">
@@ -16,6 +22,26 @@ const ProfilePage = () => {
           <p className="text-sm text-muted-foreground">{user?.email}</p>
         </div>
       </div>
+
+      {stats && (
+        <div className="grid grid-cols-3 gap-3">
+          <div className="flex flex-col items-center gap-1 rounded-xl bg-card px-2 py-3 shadow-sm">
+            <BinocularsIcon className="size-5 text-primary" />
+            <p className="text-xl font-bold">{stats.totalSightings}</p>
+            <p className="text-[11px] text-muted-foreground">Observationer</p>
+          </div>
+          <div className="flex flex-col items-center gap-1 rounded-xl bg-card px-2 py-3 shadow-sm">
+            <BirdIcon className="size-5 text-primary" />
+            <p className="text-xl font-bold">{stats.uniqueSpecies}</p>
+            <p className="text-[11px] text-muted-foreground">Arter</p>
+          </div>
+          <div className="flex flex-col items-center gap-1 rounded-xl bg-card px-2 py-3 shadow-sm">
+            <CalendarIcon className="size-5 text-primary" />
+            <p className="text-sm font-bold">{format(new Date(stats.memberSince), "MMM yyyy", { locale: sv })}</p>
+            <p className="text-[11px] text-muted-foreground">Medlem sedan</p>
+          </div>
+        </div>
+      )}
 
       <div className="overflow-hidden rounded-xl bg-card shadow-sm">
         <button

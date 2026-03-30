@@ -60,6 +60,12 @@ export const typeDefs = gql`
     uncommon: [NearbyBird!]!
   }
 
+  type UserStats {
+    totalSightings: Int!
+    uniqueSpecies: Int!
+    memberSince: String!
+  }
+
   type SpeciesRarity {
     level: String!
     label: String!
@@ -79,6 +85,7 @@ export const typeDefs = gql`
     myLifeList: [LifeListEntry!]!
     nearbyBirds(latitude: Float!, longitude: Float!): NearbyBirdsResult!
     speciesByScientificName(scientificName: String!, vernacularName: String): Species
+    myStats: UserStats!
     speciesRarity(scientificName: String!, latitude: Float!, longitude: Float!): SpeciesRarity!
   }
 
