@@ -59,7 +59,7 @@ export const resolvers = {
 
       prisma.species
         .update({ where: { id: species.id }, data: { description: summary } })
-        .catch(() => {});
+        .catch((e) => console.error("Failed to cache species description:", e));
 
       return summary;
     },
@@ -74,7 +74,7 @@ export const resolvers = {
       const imageUrl = wikimediaUrl;
 
       // Cache asynchronously — don't block the response
-      prisma.species.update({ where: { id: species.id }, data: { imageUrl } }).catch(() => {});
+      prisma.species.update({ where: { id: species.id }, data: { imageUrl } }).catch((e) => console.error("Failed to cache species imageUrl:", e));
 
       return imageUrl;
     },

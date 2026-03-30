@@ -334,7 +334,7 @@ export async function getAreaDistribution(
 
   const promise = fetchAreaDistribution(latitude, longitude, date, thorough, key);
   inflightRequests.set(key, promise);
-  promise.finally(() => inflightRequests.delete(key)).catch(() => {});
+  promise.finally(() => inflightRequests.delete(key)).catch((e) => console.error("Failed to fetch area distribution:", e));
   return promise;
 }
 
