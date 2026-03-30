@@ -1,6 +1,6 @@
 import { Button } from "@/components/ui/button";
 import { Spinner } from "@/components/ui/spinner";
-import { proxyImageUrl } from "@/lib/utils";
+import { getIdentifyErrorMessage, proxyImageUrl } from "@/lib/utils";
 import {
   ArrowLeftIcon,
   BirdIcon,
@@ -101,14 +101,15 @@ const GuidedIdentifyPage = () => {
       );
 
       if (!response.ok) {
-        throw new Error("Identification failed");
+        const data = await response.json().catch(() => ({}));
+        throw new Error(data.error || "unknown");
       }
 
       const data = await response.json();
       setResults(data.results);
       setTip(data.tip ?? null);
-    } catch {
-      setError("Kunde inte identifiera fågeln. Försök igen.");
+    } catch (e) {
+      setError(getIdentifyErrorMessage(e));
     } finally {
       setLoading(false);
     }

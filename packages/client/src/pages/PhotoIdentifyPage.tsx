@@ -1,6 +1,6 @@
 import { Button } from "@/components/ui/button";
 import { Spinner } from "@/components/ui/spinner";
-import { proxyImageUrl } from "@/lib/utils";
+import { getIdentifyErrorMessage, proxyImageUrl } from "@/lib/utils";
 import { ArrowLeftIcon, BirdIcon, PlusIcon } from "lucide-react";
 import { ChangeEvent, useRef, useState } from "react";
 import { Navigate, useLocation, useNavigate } from "react-router-dom";
@@ -62,13 +62,14 @@ const PhotoIdentifyPage = () => {
       );
 
       if (!response.ok) {
-        throw new Error("Identification failed");
+        const data = await response.json().catch(() => ({}));
+        throw new Error(data.error || "unknown");
       }
 
       const data = await response.json();
       setResults(data.results);
-    } catch {
-      setError("Kunde inte identifiera fågeln. Försök igen.");
+    } catch (e) {
+      setError(getIdentifyErrorMessage(e));
     } finally {
       setLoading(false);
     }
