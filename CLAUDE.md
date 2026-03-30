@@ -1,7 +1,7 @@
 # BIRDLOG — Claude Project Context
 
-Last updated: 2026-03-24
-Current phase: Phase 6 DONE, UX audit done, Phase 7 next (Bird Intelligence)
+Last updated: 2026-03-30
+Current phase: Phase 7 in progress (Bird Intelligence) — Step 1 done, Step 2 done, Step 3 next
 Phase 3 quiz: COMPLETED
 Phase 6 quiz: COMPLETED (5/8)
 Phase 7 (Notifications): SKIPPED — replaced with more valuable features
@@ -418,7 +418,7 @@ since they all serve the same goal: contextual bird knowledge.
 
 ### Nearby birds redesign (2026-03-24) [DONE]
 - **Layout**: hero card (rarest bird) + two sections: "Vanligast nära dig" (top 3) + "Ovanliga nära dig" (3 uncommon)
-- **GraphQL**: `NearbyBirdsResult` now has `hero: NearbyBird!`, `common: [NearbyBird!]!`, `uncommon: [NearbyBird!]!` (was `common` + `rare`)
+- **GraphQL**: `NearbyBirdsResult` now has `hero: NearbyBird`, `common: [NearbyBird!]!`, `uncommon: [NearbyBird!]!` (hero is nullable)
 - **Accurate report counts**: observation counts now reflect actual observation reports (number of sighting events), not individual bird counts
   - `getAllReportCounts()` in artdatabanken.ts — paginates through `Observations/Search` endpoint counting reports per taxon
   - `getAreaDistribution()` uses report counts (replaces TaxonAggregation's individual bird counts)
@@ -441,9 +441,11 @@ since they all serve the same goal: contextual bird knowledge.
 - **Species imageUrl/description**: cached in DB (Species table) — fetched lazily from Wikipedia on first access
 - Location-based caches automatically refresh when user moves to a new area (~22km grid)
 
-### Step 2: Basic profile stats [TODO]
-- Small summary on ProfilePage: total sightings, unique species, member since
-- Pure database queries, no external API
+### Step 2: Basic profile stats [DONE]
+- GraphQL: `UserStats` type, `myStats` query — totalSightings, uniqueSpecies, memberSince
+- Resolver: three Prisma queries in parallel via `Promise.all` (sighting.count, sighting.groupBy for unique species, user.findUnique for createdAt)
+- ProfilePage: 3 stat boxes in a row (observations count, unique species count, member since formatted as "MMM yyyy")
+- Client: `MY_STATS` query in queries.ts
 
 ### Step 3: Migration & seasonal info [TODO]
 - Enrich species with resident/migrant status and typical arrival/departure periods
@@ -476,7 +478,16 @@ since they all serve the same goal: contextual bird knowledge.
 - `packages/client/src/utils/types.ts` — Shared TypeScript interfaces (Species, Sighting, MyLifeList)
 - `packages/client/src/lib/utils.ts` — cn() utility, proxyImageUrl(), toSpeciesSlug(), fromSpeciesSlug()
 
+### Bug fix: nearbyBirds blank page (2026-03-30)
+- `hero` field in `NearbyBirdsResult` changed from non-nullable to nullable — returning `null` for a `NearbyBird!` field caused GraphQL to nuke the entire response, resulting in a blank IdentifyPage
+- `nearbyBirds` resolver wrapped in try/catch — on API failure, returns stale cache if available, otherwise empty fallback `{ hero: null, common: [], uncommon: [] }`
+
 ## Deployment
+
+### Deploy skill
+- `/deploy` custom skill at `.claude/skills/deploy/SKILL.md` — guides through manual deploy steps
+- SSH key auth not set up (TrueNAS home directory restrictions) — uses password-based SSH
+- TrueNAS user: `henrik`, IP: `192.168.50.212`, project path: `/var/www/birdlog`
 
 ### Production — TrueNAS SCALE (self-hosted)
 - Live at: `https://birdlog.henlit.se`
