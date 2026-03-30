@@ -36,6 +36,12 @@ const AuthProvider = ({ children }: { children: ReactNode }) => {
         setUser(data.me);
       }
     },
+    onError: () => {
+      // Token is invalid or expired — clear it
+      localStorage.removeItem("token");
+      setToken(null);
+      setUser(null);
+    },
   });
 
   const login = (token: string, user: User) => {

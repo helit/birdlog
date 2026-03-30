@@ -6,10 +6,7 @@ import App from "./App.js";
 import "./index.css";
 import { AuthProvider } from "./context/AuthContext.js";
 import { BrowserRouter } from "react-router-dom";
-
-const httpLink = createHttpLink({
-  uri: "/graphql",
-});
+import { onError } from "@apollo/client/link/error";
 
 const authLink = setContext((_, { headers }) => {
   const token = localStorage.getItem("token");
@@ -21,8 +18,20 @@ const authLink = setContext((_, { headers }) => {
   };
 });
 
+const errorLink = onError(({ graphQLErrors }) => {
+  if (graphQLErrors?.some((e) => e.extensions?.code === "UNAUTHENTICATED")) {
+    localStorage.removeItem("token");
+    window.location.href = "/login";
+  }
+});
+
+const httpLink = createHttpLink({
+  uri: "/graphql",
+});
+
+// Chain: authLink → errorLink → httpLink
 const client = new ApolloClient({
-  link: authLink.concat(httpLink),
+  link: authLink.concat(errorLink).concat(httpLink),
   cache: new InMemoryCache(),
 });
 
