@@ -236,6 +236,7 @@ const SightingFormPage = () => {
         <Button
           className="mt-2 w-full"
           onClick={async () => {
+            (document.activeElement as HTMLElement)?.blur();
             try {
               if (id) {
                 await updateSighting({

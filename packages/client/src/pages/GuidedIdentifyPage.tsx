@@ -243,6 +243,7 @@ const GuidedIdentifyPage = () => {
       {/* Progress bar */}
       <div className="flex items-center gap-2">
         <button
+          aria-label="Tillbaka"
           className="flex items-center gap-1 text-sm text-muted-foreground"
           onClick={handleBack}
         >

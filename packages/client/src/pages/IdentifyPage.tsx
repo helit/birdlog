@@ -234,18 +234,21 @@ const IdentifyPage = () => {
 
       <div className="mt-auto flex justify-center gap-6 pb-4">
         <button
+          aria-label="Guidad identifiering"
           className="flex size-14 items-center justify-center rounded-full bg-card shadow-sm active:scale-95"
           onClick={() => navigate("/identify/guided", { state: { latitude, longitude } })}
         >
           <WandSparklesIcon className="size-6 text-primary" />
         </button>
         <button
+          aria-label="Ny observation"
           className="flex size-14 items-center justify-center rounded-full bg-primary shadow-sm active:scale-95"
           onClick={() => navigate("/new")}
         >
           <PlusIcon className="size-6 text-primary-foreground" />
         </button>
         <button
+          aria-label="Fotoidentifiering"
           className="flex size-14 items-center justify-center rounded-full bg-card shadow-sm active:scale-95"
           onClick={() => {
             if (fileInputRef.current) fileInputRef.current.value = "";

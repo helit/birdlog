@@ -1,3 +1,14 @@
+import {
+  AlertDialog,
+  AlertDialogAction,
+  AlertDialogCancel,
+  AlertDialogContent,
+  AlertDialogDescription,
+  AlertDialogFooter,
+  AlertDialogHeader,
+  AlertDialogTitle,
+  AlertDialogTrigger,
+} from "@/components/ui/alert-dialog";
 import { Button } from "@/components/ui/button";
 import { DELETE_SIGHTING } from "@/graphql/mutations";
 import { MY_SIGHTINGS, MY_LIFE_LIST } from "@/graphql/queries";
@@ -153,24 +164,40 @@ const SightingDetailPage = () => {
           <PencilIcon className="size-4" />
           Redigera
         </Button>
-        <Button
-          variant="destructive"
-          className="flex-1"
-          onClick={async () => {
-            try {
-              await deleteSighting({ variables: { deleteSightingId: sighting.id } });
-              toast.success("Observation raderad");
-              navigate("/sightings");
-            } catch (error) {
-              toast.error("Observation kunde inte raderas. Vänligen försök igen.");
-              console.error(error);
-            }
-          }}
-          disabled={deleting}
-        >
-          {deleting ? <Spinner /> : <TrashIcon className="size-4" />}
-          Radera
-        </Button>
+        <AlertDialog>
+          <AlertDialogTrigger
+            render={<Button variant="destructive" className="flex-1" disabled={deleting} />}
+          >
+            {deleting ? <Spinner /> : <TrashIcon className="size-4" />}
+            Radera
+          </AlertDialogTrigger>
+          <AlertDialogContent>
+            <AlertDialogHeader>
+              <AlertDialogTitle>Radera observation?</AlertDialogTitle>
+              <AlertDialogDescription>
+                Observationen av {sighting.species.swedishName} den{" "}
+                {format(sighting.date, "d MMMM yyyy", { locale: sv })} kommer att tas bort permanent.
+              </AlertDialogDescription>
+            </AlertDialogHeader>
+            <AlertDialogFooter>
+              <AlertDialogCancel>Avbryt</AlertDialogCancel>
+              <AlertDialogAction
+                onClick={async () => {
+                  try {
+                    await deleteSighting({ variables: { deleteSightingId: sighting.id } });
+                    toast.success("Observation raderad");
+                    navigate("/sightings");
+                  } catch (error) {
+                    toast.error("Observation kunde inte raderas. Vänligen försök igen.");
+                    console.error(error);
+                  }
+                }}
+              >
+                Radera
+              </AlertDialogAction>
+            </AlertDialogFooter>
+          </AlertDialogContent>
+        </AlertDialog>
       </div>
     </div>
   );
