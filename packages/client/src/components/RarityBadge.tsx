@@ -1,20 +1,13 @@
 import { useQuery } from "@apollo/client";
 import { SPECIES_RARITY } from "@/graphql/queries";
 import { Skeleton } from "@/components/ui/skeleton";
+import { rarityColors } from "@/lib/rarityColors";
 
 interface RarityBadgeProps {
   scientificName: string;
   latitude: number;
   longitude: number;
 }
-
-const levelColors: Record<string, { bg: string; text: string; dot: string }> = {
-  very_common: { bg: "bg-emerald-50", text: "text-emerald-700", dot: "bg-emerald-500" },
-  common: { bg: "bg-sky-50", text: "text-sky-700", dot: "bg-sky-500" },
-  uncommon: { bg: "bg-amber-50", text: "text-amber-700", dot: "bg-amber-500" },
-  rare: { bg: "bg-rose-50", text: "text-rose-700", dot: "bg-rose-500" },
-  not_observed: { bg: "bg-violet-50", text: "text-violet-700", dot: "bg-violet-500" },
-};
 
 const RarityBadge = ({ scientificName, latitude, longitude }: RarityBadgeProps) => {
   const { data, loading, error } = useQuery(SPECIES_RARITY, {
@@ -33,7 +26,7 @@ const RarityBadge = ({ scientificName, latitude, longitude }: RarityBadgeProps) 
   const rarity = data?.speciesRarity;
   if (!rarity) return null;
 
-  const colors = levelColors[rarity.level] ?? levelColors.not_observed;
+  const colors = rarityColors[rarity.level] ?? rarityColors.not_observed;
 
   return (
     <div className={`flex flex-col gap-1.5 rounded-lg p-3 ${colors.bg}`}>

@@ -21,7 +21,7 @@ const BottomNav = () => {
   const isActive = (path: string) => pathname === path;
 
   return (
-    <nav className="fixed bottom-0 left-0 right-0 bg-white shadow-[0_-1px_4px_rgba(0,0,0,0.03)]">
+    <nav className="fixed bottom-0 left-0 right-0 bg-card shadow-[0_-1px_4px_rgba(0,0,0,0.03)]">
       <div className="flex justify-around" role="tablist">
         {tabs.map(({ to, label, Icon }) => (
           <Link

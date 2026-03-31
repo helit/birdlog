@@ -8,7 +8,7 @@ import { typeDefs } from "./schema/typeDefs.js";
 import { resolvers } from "./schema/resolvers.js";
 import { getContextUser, GraphQLContext } from "./middleware/auth.js";
 import { identifyBird, identifyBirdFromDescription } from "./services/openai.js";
-import { getWikimediaImage } from "./services/artdatabanken.js";
+import { enrichBirdCandidates } from "./services/speciesEnrichment.js";
 import { PrismaClient } from "@prisma/client";
 
 // Fail fast if required env vars are missing
@@ -134,29 +134,7 @@ app.post(
       console.log("Identification results:", JSON.stringify(results, null, 2));
 
       // Enrich results: upsert species so every identified bird gets a DB record
-      const enriched = await Promise.all(
-        results.map(async (bird) => {
-          const imageUrl = await getWikimediaImage(bird.scientificName);
-
-          const species = await prisma.species.upsert({
-            where: { scientificName: bird.scientificName },
-            update: {
-              imageUrl: imageUrl ?? undefined,
-            },
-            create: {
-              swedishName: bird.swedishName,
-              scientificName: bird.scientificName,
-              imageUrl,
-            },
-          });
-
-          return {
-            ...bird,
-            speciesId: species.id,
-            imageUrl: species.imageUrl ?? imageUrl,
-          };
-        }),
-      );
+      const enriched = await enrichBirdCandidates(results, prisma);
 
       res.json({ results: enriched });
     } catch (error) {
@@ -191,29 +169,7 @@ app.post(
       const { candidates, tip } = await identifyBirdFromDescription({ size, colors, habitat, notes, month, latitude, longitude });
       console.log("Guided identification results:", JSON.stringify(candidates, null, 2));
 
-      const enriched = await Promise.all(
-        candidates.map(async (bird) => {
-          const imageUrl = await getWikimediaImage(bird.scientificName);
-
-          const species = await prisma.species.upsert({
-            where: { scientificName: bird.scientificName },
-            update: {
-              imageUrl: imageUrl ?? undefined,
-            },
-            create: {
-              swedishName: bird.swedishName,
-              scientificName: bird.scientificName,
-              imageUrl,
-            },
-          });
-
-          return {
-            ...bird,
-            speciesId: species.id,
-            imageUrl: species.imageUrl ?? imageUrl,
-          };
-        }),
-      );
+      const enriched = await enrichBirdCandidates(candidates, prisma);
 
       res.json({ results: enriched, tip });
     } catch (error) {
