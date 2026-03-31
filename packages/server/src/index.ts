@@ -2,6 +2,10 @@ import { ApolloServer } from "@apollo/server";
 import { expressMiddleware } from "@apollo/server/express4";
 import express from "express";
 import cors from "cors";
+import helmet from "helmet";
+import compression from "compression";
+import rateLimit from "express-rate-limit";
+import morgan from "morgan";
 import path from "path";
 import { fileURLToPath } from "url";
 import { typeDefs } from "./schema/typeDefs.js";
@@ -24,6 +28,44 @@ const prisma = new PrismaClient();
 
 const app = express();
 const port = process.env.PORT || 4000;
+
+// --- Production hardening middleware ---
+
+// Security headers (disable CSP in dev so Vite HMR works)
+app.use(helmet({
+  contentSecurityPolicy: process.env.NODE_ENV === "production" ? undefined : false,
+}));
+
+// Gzip compression
+app.use(compression() as unknown as express.RequestHandler);
+
+// Request logging
+app.use(morgan(process.env.NODE_ENV === "production" ? "combined" : "dev"));
+
+// General rate limit: 100 req/min per IP
+const generalLimiter = rateLimit({
+  windowMs: 60_000,
+  max: 100,
+  standardHeaders: true,
+  legacyHeaders: false,
+});
+app.use("/api", generalLimiter as unknown as express.RequestHandler);
+app.use("/graphql", generalLimiter as unknown as express.RequestHandler);
+
+// Stricter limit for identify endpoints (expensive OpenAI calls)
+const identifyLimiter = rateLimit({
+  windowMs: 60_000,
+  max: 10,
+  standardHeaders: true,
+  legacyHeaders: false,
+  message: { error: "rate_limit", message: "Too many identification requests. Try again shortly." },
+});
+app.use("/api/identify", identifyLimiter as unknown as express.RequestHandler);
+
+// Health check (before auth/CORS — always accessible)
+app.get("/health", (_req, res) => {
+  res.json({ status: "ok" });
+});
 
 const server = new ApolloServer({
   typeDefs,
@@ -168,6 +210,20 @@ if (process.env.NODE_ENV === "production") {
   });
 }
 
-app.listen(port, () => {
+const httpServer = app.listen(port, () => {
   console.log(`🐦 BirdLog server running at http://localhost:${port}/graphql`);
 });
+
+// Graceful shutdown
+async function shutdown(signal: string) {
+  console.log(`\n${signal} received — shutting down gracefully`);
+  httpServer.close(() => {
+    console.log("HTTP server closed");
+  });
+  await prisma.$disconnect();
+  await server.stop();
+  process.exit(0);
+}
+
+process.on("SIGTERM", () => shutdown("SIGTERM"));
+process.on("SIGINT", () => shutdown("SIGINT"));
