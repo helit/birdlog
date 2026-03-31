@@ -9,3 +9,10 @@ packages/server/prisma/migrations/**/migration_lock.toml
 
 # Vite
 packages/client/.vite/
+
+# TypeScript build artifacts
+*.tsbuildinfo
+vite.config.d.ts
+vite.config.d.ts.map
+vite.config.js
+vite.config.js.map
