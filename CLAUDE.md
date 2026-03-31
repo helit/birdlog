@@ -466,26 +466,27 @@ since they all serve the same goal: contextual bird knowledge.
 Full-app analysis conducted 2026-03-30 by four parallel agent reviews (UX, Design, Code quality, Devil's advocate).
 This phase addresses the most impactful findings before adding new features.
 
-### Step 1: Error handling & resilience [TODO]
-- Add `onError` handler to AuthContext — invalidate token on auth failure (app currently hangs)
-- Add error/loading handling to all `useQuery`/`useMutation` calls (ProfilePage, SightingFormPage, etc.)
-- Replace silent `.catch(() => {})` on DB cache updates with `console.error` logging
-- Add contextual error messages on identification endpoints (network vs timeout vs rate limit vs no bird found)
-- Add request timeouts to fetch calls (5s Artdatabanken, 30s OpenAI, 10s Wikipedia)
-- Handle geolocation errors visibly in BirdInfoPage and SightingFormPage (currently silent)
+### Step 1: Error handling & resilience [DONE]
+- Added `onError` handler to AuthContext — invalidates token on auth failure
+- Added error/loading handling to `useQuery`/`useMutation` calls (ProfilePage, SightingFormPage, etc.)
+- Added contextual error messages on identification endpoints (network vs timeout vs rate limit vs no bird found)
+- Added request timeouts to fetch calls (5s Artdatabanken, 30s OpenAI, 10s Wikipedia)
+- Added error logging to silent catch handlers on server
+- Handle geolocation errors visibly in BirdInfoPage and SightingFormPage
 
-### Step 2: Input validation [TODO]
+### Step 2: Input validation [DONE]
 - Server: validate GraphQL mutation inputs (lat ±90, lng ±180, date format, string length limits)
-- Consider Zod for schema validation on server
 - Server: validate env vars at startup (JWT_SECRET, OPENAI_API_KEY, etc.) — fail fast if missing
 - Client: validate coordinate input on SightingFormPage
+- Zod skipped — not needed for current scope
 
-### Step 3: Accessibility & mobile UX [TODO]
-- Add `aria-label` to all icon-only buttons (BottomNav tabs, IdentifyPage action buttons, back buttons)
-- Increase BottomNav touch targets to 44-48px minimum
-- Add confirm dialog before sighting deletion (SightingDetailPage)
-- Blur inputs on form submit (dismiss mobile keyboard)
-- Add `role="tab"` and `aria-selected` to BottomNav
+### Step 3: Accessibility & mobile UX [DONE]
+- Added `aria-label` to all icon-only buttons (BottomNav tabs, IdentifyPage action buttons, GuidedIdentifyPage back button)
+- Increased BottomNav touch targets to 48px (`px-2 py-3`)
+- Added AlertDialog confirm before sighting deletion (SightingDetailPage) — shows species name + date
+- Blur inputs on form submit (dismiss mobile keyboard) in SightingFormPage
+- Added `role="tablist"` on BottomNav container, `role="tab"` + `aria-selected` on each tab link
+- Refactored BottomNav to use `tabs` array (less repetition)
 
 ### Step 4: Code quality & DRY [TODO]
 - Extract duplicated `levelColors` from RarityBadge.tsx and SightingDetailPage.tsx → shared util
