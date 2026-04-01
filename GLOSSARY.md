@@ -20,6 +20,11 @@ Terms and concepts used in this project. Reference this when encountering unfami
 - **Species enrichment** — server-side pipeline: AI result → Wikipedia image fetch → DB upsert
 - **Image proxy** — Express endpoint that proxies Wikimedia image URLs (CORS + caching)
 
+## UI Patterns
+- **sort key** — an identifier string for a sighting sort order (e.g. `date-desc`, `species-asc`) (Swedish UI: "Sortering")
+- **bottom sheet** — a modal panel that slides up from the bottom of the screen, used for contextual option selection
+- **flat list** — a sightings list rendered without section/month headers, used for non-date sort orders
+
 ## Phases
 - **Phase 7b** — current: hardening & quality pass (error handling, validation, a11y, code quality, testing, production)
 - **Phase 7c** — paused: migration data, seasonal info, nearby hotspots

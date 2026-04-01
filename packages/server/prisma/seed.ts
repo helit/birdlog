@@ -1,4 +1,5 @@
 import { PrismaClient } from "@prisma/client";
+import bcrypt from "bcrypt";
 
 const prisma = new PrismaClient();
 
@@ -335,6 +336,17 @@ const swedishBirds = [
 ];
 
 async function main() {
+  // E2E test user — credentials must match E2E_EMAIL / E2E_PASSWORD env vars
+  const testEmail = process.env.E2E_EMAIL ?? "test@birdlog.test";
+  const testPassword = process.env.E2E_PASSWORD ?? "test-password";
+  const hashedPassword = await bcrypt.hash(testPassword, 12);
+  await prisma.user.upsert({
+    where: { email: testEmail },
+    update: { password: hashedPassword },
+    create: { email: testEmail, name: "Test User", password: hashedPassword },
+  });
+  console.log(`Test user ready: ${testEmail}`);
+
   console.log(`Upserting ${swedishBirds.length} Swedish bird species...`);
 
   let created = 0;

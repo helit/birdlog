@@ -12,6 +12,7 @@
     "dev:client": "npm run dev --workspace=packages/client",
     "build": "npm run build --workspaces",
     "test": "npm run test --workspaces --if-present",
+    "test:e2e": "npm run test:e2e --workspace=packages/client",
     "typecheck": "npm run typecheck --workspaces --if-present",
     "db:migrate": "npm run db:migrate --workspace=packages/server",
     "db:seed": "npm run db:seed --workspace=packages/server",
