@@ -1,6 +1,6 @@
 ---
 name: implement
-description: Implement a single GitHub issue using TDD. Writes failing tests first, then implements, then opens a PR.
+description: Implement a single GitHub issue using strict red/green/refactor TDD — one test at a time, then opens a PR.
 ---
 
 Usage: /implement ISSUE_NUMBER
@@ -19,16 +19,34 @@ Branch setup:
 git checkout -b feat/issue-ISSUE_NUMBER-short-description
 ```
 
-TDD protocol — strictly in this order:
-1. Write failing tests first. Vitest tests go colocated with source (`src/**/*.test.ts(x)`). Playwright tests go in `packages/client/e2e/`.
-2. Run tests to confirm they fail:
-   - Client: `npm run test --workspace=packages/client`
-   - Server: `npm run test --workspace=packages/server`
-   - E2E: `npm run test:e2e` (only if the issue requires Playwright)
-3. Write the implementation to make the tests pass. Follow the patterns from the files you read in the bootstrap sequence.
-4. Run tests again to confirm they pass.
-5. Run `npm run typecheck` — fix any type errors before continuing.
-6. Run `npm run lint` — fix any lint errors before continuing.
+TDD protocol — strict red/green/refactor, one test at a time:
+
+Work through the Test Requirements from the issue in order. For each test:
+
+**RED** — Write one test. Run the test suite and confirm:
+- This test fails
+- No other previously-passing tests broke
+- Vitest: `npm run test --workspace=packages/client` or `packages/server`
+- Playwright: `npm run test:e2e` (only if the issue requires it)
+
+**GREEN** — Write the minimal implementation to make this test pass. No more than needed. Run tests again and confirm:
+- This test now passes
+- Nothing else broke
+
+**REFACTOR** — With tests green, improve the code: remove duplication, clarify names, simplify logic. Run tests again to confirm still green.
+- Do not add new behavior during refactor
+- Do not skip this pass — even if nothing is obvious, take a moment to look
+
+Commit, then move to the next test and repeat.
+
+Rules:
+- Never write more than one new test at a time
+- Never write implementation before the test exists and is confirmed red
+- Commit strategy: one commit per completed cycle, or group closely related cycles if they form a natural unit
+
+After all tests pass:
+- Run `npm run typecheck` — fix any type errors
+- Run `npm run lint` — fix any lint errors
 
 Commit convention:
 - `feat(scope): description` for new features

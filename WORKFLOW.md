@@ -1,41 +1,36 @@
 # Development Workflow
 
-How features go from idea to merged PR using Claude.
+How features and bugs go from idea to merged PR using Claude.
 
-## The Five Phases
+## The Four Phases
 
 ```
-/plan  →  /prd SLUG  →  /issues SLUG  →  /implement N  →  /review PR_N  →  merge
+/pitch  →  /issues SLUG  →  /implement N  →  /review PR_N  →  merge
 ```
 
 Every phase boundary is a **manual checkpoint** — nothing auto-progresses. Each phase runs in a **fresh Claude context**. Artifacts (files, GitHub issues) carry context between phases, not conversation history.
 
 ---
 
-## Phase 1: Plan (`/plan`)
+## Phase 1: Pitch (`/pitch`)
 
-Use the built-in `/plan` mode. Describe the feature. Claude evaluates it through four lenses:
+Describe what you want — a feature, a bug, an enhancement, anything. Claude:
 
-- **UX** — What does the user actually do? Happy path? Confusing states?
-- **Technical** — Feasibility, edge cases, what breaks?
-- **Data/API** — Schema changes? New resolvers? External API calls?
-- **Design/UI** — Mobile-first? Fits existing visual language? Swedish strings?
+1. Classifies the request (feature / bug / enhancement / refactor / dx)
+2. Explores the codebase silently to answer what it can without asking you
+3. Interviews you top-down: problem framing → scope → architecture → details → edge cases
+4. Runs a final challenge round on things that are easy to miss (Swedish strings, mobile edge cases, empty states, TDD readiness)
+5. Writes the PRD to `docs/prd/FEATURE_SLUG.md` and updates `GLOSSARY.md`
 
-Output: a PRD draft in the conversation.
+Templates:
+- `docs/prd/_template_feature.md` — for features, enhancements, refactors, dx
+- `docs/prd/_template_bug.md` — for bugs
 
-**Checkpoint:** You approve the draft, then run `/prd SLUG`.
-
----
-
-## Phase 2: Write PRD (`/prd SLUG`)
-
-Writes the approved PRD to `docs/prd/FEATURE_SLUG.md` using the template at `docs/prd/_template.md`. Also appends any new domain terms to `GLOSSARY.md`.
-
-**Checkpoint:** Review `docs/prd/FEATURE_SLUG.md` and `GLOSSARY.md`, then run `/issues SLUG`.
+**Checkpoint:** Review `docs/prd/FEATURE_SLUG.md` and `GLOSSARY.md`, then run `/issues FEATURE_SLUG`.
 
 ---
 
-## Phase 3: Create Issues (`/issues SLUG`)
+## Phase 2: Create Issues (`/issues SLUG`)
 
 Reads the PRD and creates labeled GitHub issues — one per implementable unit, ordered data layer first (schema → resolvers → client). Each issue contains:
 - Acceptance criteria from the PRD
@@ -48,7 +43,7 @@ Reads the PRD and creates labeled GitHub issues — one per implementable unit, 
 
 ---
 
-## Phase 4: Implement (`/implement N`)
+## Phase 3: Implement (`/implement N`)
 
 Reads the issue, linked PRD, `CLAUDE.md`, `GLOSSARY.md`, and the listed source files — then implements with TDD:
 
@@ -63,7 +58,7 @@ Reads the issue, linked PRD, `CLAUDE.md`, `GLOSSARY.md`, and the listed source f
 
 ---
 
-## Phase 5: Review (`/review PR_N`)
+## Phase 4: Review (`/review PR_N`)
 
 Reads the PR diff, all review comments, the linked issue, and PRD. Addresses each comment — code changes, inline replies, or flags conflicts with the PRD for you to decide. Pushes changes and replies to threads.
 
@@ -73,7 +68,7 @@ Reads the PR diff, all review comments, the linked issue, and PRD. Addresses eac
 
 ## How Context Isolation Works
 
-A fresh Claude in Phase 4 has zero conversation history. It gets all needed context from this chain (read in order):
+A fresh Claude in Phase 3 has zero conversation history. It gets all needed context from this chain (read in order):
 
 ```
 GitHub Issue → docs/prd/FEATURE_SLUG.md → CLAUDE.md → GLOSSARY.md → listed source files
@@ -88,8 +83,8 @@ The "Files to Read Before Starting" section in each issue is the critical piece 
 | What | Where | Written by |
 |---|---|---|
 | Project conventions | `CLAUDE.md` | You |
-| Domain vocabulary | `GLOSSARY.md` | `/prd` skill |
-| Feature requirements | `docs/prd/FEATURE_SLUG.md` | `/prd` skill |
+| Domain vocabulary | `GLOSSARY.md` | `/pitch` skill |
+| Feature requirements | `docs/prd/FEATURE_SLUG.md` | `/pitch` skill |
 | Single-issue scope | GitHub issue body | `/issues` skill |
 
 ---

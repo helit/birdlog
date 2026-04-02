@@ -13,11 +13,30 @@ Bootstrap sequence (run before creating any issues):
 3. Read `GLOSSARY.md` — understand domain terms.
 
 Decomposition rules:
-- Each issue must be implementable in a single focused PR.
-- Order issues so data layer comes before API layer, which comes before UI layer: schema/migration → resolvers/typeDefs → client queries/mutations → client components/pages.
-- Every issue must have explicit acceptance criteria and test requirements copied from the PRD.
-- Every issue must link back to the PRD.
-- Every issue must include a "Files to Read Before Starting" section listing 2–4 specific source files that contain the patterns the implementer should follow.
+
+**Size: match the feature, not a formula.**
+If the feature is small (one screen, one user action, one data change), create one issue. Do not split small features into separate layer issues. A feature with 3 acceptance criteria is probably one issue. A feature with 12 acceptance criteria across multiple screens probably needs 3–4 issues.
+
+**Each issue must be a testable vertical slice.**
+A vertical slice means: enough of the stack is implemented that the behavior can be verified — by a test, by a PR reviewer, or both. Ask yourself: "Could a reviewer open this PR and confirm it does something real?" If not, the issue is too thin — combine it with the issue that gives it meaning.
+
+Bad decomposition: "Create `FilterSheet.tsx` component (no wiring)" → untestable, no observable behavior.
+Good decomposition: "User can filter sightings by species" → includes the component, the wiring, the state, and the tests.
+
+**Infrastructure issues are OK when independently testable.**
+A DB migration issue is fine if it has its own test coverage (e.g., migration runs cleanly, schema constraints hold). A standalone "create file with no behavior" issue is not.
+
+**Ordering: dependency-driven, not layer-driven.**
+Order issues so each one can be implemented without depending on an unfinished issue. If a schema change is required before the API, that comes first. But do not create a separate issue just to add a UI component if that component is only meaningful when wired into the feature.
+
+**Reusable utilities are the exception.**
+A new shared utility (e.g., a sort function, a generic bottom sheet component) may warrant its own issue if it has independent unit tests and will be reused. Do not create separate issues for components that exist only for this feature.
+
+Every issue must have:
+- Explicit acceptance criteria copied from the PRD for this issue's scope
+- Specific test requirements (name the test file and what it asserts — never "add unit tests")
+- A link back to the PRD
+- A "Files to Read Before Starting" section listing 2–4 specific source files with the patterns to follow
 
 For each issue, create it using:
 ```
