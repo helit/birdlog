@@ -23,7 +23,7 @@ function SheetOverlay({
     <DialogPrimitive.Backdrop
       data-slot="sheet-overlay"
       className={cn(
-        "fixed inset-0 isolate z-[900] bg-black/10 duration-100 supports-backdrop-filter:backdrop-blur-xs data-open:animate-in data-open:fade-in-0 data-closed:animate-out data-closed:fade-out-0",
+        "fixed inset-0 isolate z-[1200] bg-black/10 duration-100 supports-backdrop-filter:backdrop-blur-xs data-open:animate-in data-open:fade-in-0 data-closed:animate-out data-closed:fade-out-0",
         className
       )}
       {...props}
@@ -42,7 +42,7 @@ function SheetContent({
       <DialogPrimitive.Popup
         data-slot="sheet-content"
         className={cn(
-          "fixed right-0 bottom-0 left-0 z-[900] flex flex-col gap-4 rounded-t-xl bg-background p-4 text-sm ring-1 ring-foreground/10 duration-200 outline-none data-open:animate-in data-open:fade-in-0 data-open:slide-in-from-bottom data-closed:animate-out data-closed:fade-out-0 data-closed:slide-out-to-bottom",
+          "fixed right-0 bottom-0 left-0 z-[1200] flex flex-col gap-4 rounded-t-xl bg-background p-4 text-sm ring-1 ring-foreground/10 duration-200 outline-none data-open:animate-in data-open:fade-in-0 data-open:slide-in-from-bottom data-closed:animate-out data-closed:fade-out-0 data-closed:slide-out-to-bottom",
           className
         )}
         {...props}
