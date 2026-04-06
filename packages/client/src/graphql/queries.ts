@@ -137,8 +137,8 @@ export const SPECIES_RARITY = gql`
 `;
 
 export const NEARBY_BIRDS = gql`
-  query NearbyBirds($latitude: Float!, $longitude: Float!) {
-    nearbyBirds(latitude: $latitude, longitude: $longitude) {
+  query NearbyBirds($latitude: Float!, $longitude: Float!, $force: Boolean) {
+    nearbyBirds(latitude: $latitude, longitude: $longitude, force: $force) {
       hero {
         scientificName
         vernacularName

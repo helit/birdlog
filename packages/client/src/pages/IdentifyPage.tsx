@@ -2,7 +2,7 @@ import { Skeleton } from "@/components/ui/skeleton";
 import { NEARBY_BIRDS } from "@/graphql/queries";
 import { proxyImageUrl, toSpeciesSlug } from "@/lib/utils";
 import { useQuery } from "@apollo/client";
-import { BirdIcon, CameraIcon, MapPinIcon, PlusIcon, WandSparklesIcon } from "lucide-react";
+import { BirdIcon, CameraIcon, MapPinIcon, PlusIcon, RefreshCw, WandSparklesIcon } from "lucide-react";
 import { ChangeEvent, useEffect, useState } from "react";
 import { useNavigate } from "react-router-dom";
 import { useRef } from "react";
@@ -103,7 +103,7 @@ const IdentifyPage = () => {
   const [longitude, setLongitude] = useState<number | null>(null);
   const [geoErrorType, setGeoErrorType] = useState<'denied' | 'timeout' | null>(null);
 
-  const { data, loading, error } = useQuery(NEARBY_BIRDS, {
+  const { data, loading, error, refetch } = useQuery(NEARBY_BIRDS, {
     variables: { latitude, longitude },
     skip: !latitude,
   });
@@ -188,7 +188,7 @@ const IdentifyPage = () => {
               <p className="font-medium capitalize leading-tight">{hero.vernacularName}</p>
               <p className="text-xs italic text-muted-foreground">{hero.scientificName}</p>
               <p className="text-xs text-muted-foreground">
-                {hero.observationCount} obs denna månad
+                {hero.observationCount} obs senaste 30 dagarna
               </p>
             </div>
           </div>
@@ -219,9 +219,19 @@ const IdentifyPage = () => {
       {/* Common birds */}
       {(isLoading || commonBirds.length > 0) && (
         <div>
-          <h2 className="mb-2 text-sm font-semibold uppercase tracking-wide text-muted-foreground">
-            Vanligast nära dig
-          </h2>
+          <div className="mb-2 flex items-center justify-between">
+            <h2 className="text-sm font-semibold uppercase tracking-wide text-muted-foreground">
+              Vanligast nära dig
+            </h2>
+            <button
+              aria-label="Uppdatera fåglar nära dig"
+              disabled={loading}
+              onClick={() => refetch({ force: true })}
+              className="flex items-center justify-center p-1 text-muted-foreground disabled:opacity-50"
+            >
+              <RefreshCw className={`size-4 ${loading ? "animate-spin" : ""}`} />
+            </button>
+          </div>
           <div className="overflow-hidden rounded-xl bg-card shadow-sm">
             {isLoading ? (
               <ListSkeleton />
