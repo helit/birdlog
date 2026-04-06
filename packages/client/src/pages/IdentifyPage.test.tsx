@@ -57,6 +57,20 @@ describe("IdentifyPage geolocation error handling", () => {
     expect(screen.getByRole("button", { name: /försök igen/i })).toBeDefined();
   });
 
+  it("passes { timeout: 10000 } as third argument to getCurrentPosition", () => {
+    mockGetCurrentPosition.mockImplementation(() => {
+      // never calls success or error — we just inspect call args
+    });
+
+    renderIdentifyPage();
+
+    expect(mockGetCurrentPosition).toHaveBeenCalledWith(
+      expect.any(Function),
+      expect.any(Function),
+      expect.objectContaining({ timeout: 10000 }),
+    );
+  });
+
   it("calls getCurrentPosition twice and shows loading state on retry after timeout", async () => {
     const user = userEvent.setup();
 
