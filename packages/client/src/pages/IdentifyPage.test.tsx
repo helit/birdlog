@@ -41,4 +41,14 @@ describe("IdentifyPage geolocation error handling", () => {
     expect(screen.getByText("Du måste tillåta platstjänster i din webbläsare")).toBeDefined();
     expect(screen.queryByRole("button", { name: /försök igen/i })).toBeNull();
   });
+
+  it("shows Försök igen button when TIMEOUT (code 3)", () => {
+    mockGetCurrentPosition.mockImplementation((_success: unknown, error: (e: GeolocationPositionError) => void) => {
+      error(makeGeoError(3));
+    });
+
+    renderIdentifyPage();
+
+    expect(screen.getByRole("button", { name: /försök igen/i })).toBeDefined();
+  });
 });
