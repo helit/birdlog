@@ -47,9 +47,18 @@ const distributionCache = new Map<string, AreaDistribution>();
 const inflightRequests = new Map<string, Promise<AreaDistribution>>();
 const CACHE_TTL = 2 * 60 * 60 * 1000; // 2 hours
 
-function getDistributionCacheKey(lat: number, lng: number, date: Date): string {
-  // Round to ~22km grid cells (0.2°) so nearby coordinates share cache
-  return `${Math.round(lat * 5)}_${Math.round(lng * 5)}_${date.getFullYear()}-${date.getMonth()}`;
+export function getDistributionCacheKey(lat: number, lng: number, date: Date): string {
+  // Round to ~22km grid cells (0.2°) so nearby coordinates share cache.
+  // Include rolling start date so the key advances daily as the window moves.
+  const rollingStart = new Date(date.getTime() - 30 * 24 * 60 * 60 * 1000);
+  const startStr = rollingStart.toISOString().split("T")[0];
+  return `${Math.round(lat * 5)}_${Math.round(lng * 5)}_${startStr}`;
+}
+
+export function clearDistributionCache(lat: number, lng: number): void {
+  const key = getDistributionCacheKey(lat, lng, new Date());
+  distributionCache.delete(key);
+  inflightRequests.delete(key);
 }
 
 // Persistent in-memory cache for taxonId → name mappings (never expires — names don't change)
@@ -67,12 +76,10 @@ export async function getTopBirdTaxa(
   take = 20,
   forDate: Date = new Date(),
 ): Promise<TaxonAggregationRecord[]> {
-  const startDate = new Date(forDate.getFullYear(), forDate.getMonth(), 1)
+  const startDate = new Date(forDate.getTime() - 30 * 24 * 60 * 60 * 1000)
     .toISOString()
     .split("T")[0];
-  const endDate = new Date(forDate.getFullYear(), forDate.getMonth() + 1, 0)
-    .toISOString()
-    .split("T")[0];
+  const endDate = forDate.toISOString().split("T")[0];
 
   const res = await fetch(
     `${SOS_BASE_URL}/Observations/TaxonAggregation?skip=0&take=${take}`,
@@ -112,12 +119,10 @@ async function getAllReportCounts(
   longitude: number,
   forDate: Date = new Date(),
 ): Promise<Map<number, number>> {
-  const startDate = new Date(forDate.getFullYear(), forDate.getMonth(), 1)
+  const startDate = new Date(forDate.getTime() - 30 * 24 * 60 * 60 * 1000)
     .toISOString()
     .split("T")[0];
-  const endDate = new Date(forDate.getFullYear(), forDate.getMonth() + 1, 0)
-    .toISOString()
-    .split("T")[0];
+  const endDate = forDate.toISOString().split("T")[0];
 
   const counts = new Map<number, number>();
   const PAGE_SIZE = 1000;
