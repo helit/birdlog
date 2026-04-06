@@ -123,7 +123,7 @@ const IdentifyPage = () => {
 
   useEffect(() => {
     fetchLocation();
-  }, []); // eslint-disable-line react-hooks/exhaustive-deps
+  }, []); // run once on mount
 
   const handleRetry = () => {
     setLatitude(null);
