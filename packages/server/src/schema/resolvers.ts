@@ -7,6 +7,7 @@ import {
   getWikipediaSummary,
   getAreaDistribution,
   calculateSpeciesRarity,
+  clearDistributionCache,
 } from "../services/artdatabanken.js";
 
 const prisma = new PrismaClient();
@@ -161,10 +162,14 @@ export const resolvers = {
 
     nearbyBirds: async (
       _: unknown,
-      { latitude, longitude }: { latitude: number; longitude: number },
+      { latitude, longitude, force }: { latitude: number; longitude: number; force?: boolean },
     ) => {
-      // Check cache first (24h per ~22km grid cell)
+      // Check cache first (24h per ~22km grid cell), unless force-refresh requested
       const cacheKey = `nearby_${Math.round(latitude * 5)}_${Math.round(longitude * 5)}`;
+      if (force) {
+        nearbyBirdsCache.delete(cacheKey);
+        clearDistributionCache(latitude, longitude);
+      }
       const cached = nearbyBirdsCache.get(cacheKey);
       if (cached && Date.now() - cached.fetchedAt < NEARBY_BIRDS_TTL) {
         return cached.result;

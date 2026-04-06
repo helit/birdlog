@@ -101,22 +101,36 @@ const IdentifyPage = () => {
 
   const [latitude, setLatitude] = useState<number | null>(null);
   const [longitude, setLongitude] = useState<number | null>(null);
-  const [geoError, setGeoError] = useState(false);
+  const [geoErrorType, setGeoErrorType] = useState<'denied' | 'timeout' | null>(null);
 
   const { data, loading, error, refetch } = useQuery(NEARBY_BIRDS, {
     variables: { latitude, longitude },
     skip: !latitude,
   });
 
-  useEffect(() => {
+  const fetchLocation = () => {
     navigator.geolocation.getCurrentPosition(
       (pos) => {
         setLatitude(pos.coords.latitude);
         setLongitude(pos.coords.longitude);
       },
-      () => setGeoError(true),
+      (err) => {
+        setGeoErrorType(err.code === 1 ? 'denied' : 'timeout');
+      },
+      { timeout: 10000 },
     );
-  }, []);
+  };
+
+  useEffect(() => {
+    fetchLocation();
+  }, []); // run once on mount
+
+  const handleRetry = () => {
+    setLatitude(null);
+    setLongitude(null);
+    setGeoErrorType(null);
+    fetchLocation();
+  };
 
   const handlePhotoSelect = (e: ChangeEvent<HTMLInputElement>) => {
     const file = e.target.files?.[0];
@@ -134,7 +148,7 @@ const IdentifyPage = () => {
   const commonBirds: NearbyBird[] = data?.nearbyBirds?.common ?? [];
   const uncommonBirds: NearbyBird[] = data?.nearbyBirds?.uncommon ?? [];
 
-  const isLoading = !geoError && !error && (loading || !latitude);
+  const isLoading = geoErrorType === null && !error && (loading || !latitude);
 
   return (
     <div className="flex min-h-[calc(100dvh-5rem-1rem)] flex-col gap-4">
@@ -179,11 +193,21 @@ const IdentifyPage = () => {
             </div>
           </div>
         </button>
-      ) : geoError ? (
+      ) : geoErrorType === 'timeout' ? (
         <div className="flex h-32 flex-col items-center justify-center gap-2 rounded-xl bg-card shadow-sm">
           <MapPinIcon className="size-5 text-muted-foreground" />
           <p className="text-sm text-muted-foreground">Kunde inte hämta din position</p>
-          <p className="text-xs text-muted-foreground">Aktivera platstjänster för att se fåglar nära dig</p>
+          <button
+            onClick={handleRetry}
+            className="text-xs font-medium text-primary active:opacity-70"
+          >
+            Försök igen
+          </button>
+        </div>
+      ) : geoErrorType === 'denied' ? (
+        <div className="flex h-32 flex-col items-center justify-center gap-2 rounded-xl bg-card shadow-sm">
+          <MapPinIcon className="size-5 text-muted-foreground" />
+          <p className="text-sm text-muted-foreground">Du måste tillåta platstjänster i din webbläsare</p>
         </div>
       ) : error ? (
         <div className="flex h-32 flex-col items-center justify-center gap-2 rounded-xl bg-card shadow-sm">

@@ -83,7 +83,7 @@ export const typeDefs = gql`
     mySightings: [Sighting!]!
     mySightingsBySpecies(speciesId: ID!): [Sighting!]!
     myLifeList: [LifeListEntry!]!
-    nearbyBirds(latitude: Float!, longitude: Float!): NearbyBirdsResult!
+    nearbyBirds(latitude: Float!, longitude: Float!, force: Boolean): NearbyBirdsResult!
     speciesByScientificName(scientificName: String!, vernacularName: String): Species
     myStats: UserStats!
     speciesRarity(scientificName: String!, latitude: Float!, longitude: Float!): SpeciesRarity!
