@@ -106,6 +106,7 @@ const IdentifyPage = () => {
   const { data, loading, error, refetch } = useQuery(NEARBY_BIRDS, {
     variables: { latitude, longitude },
     skip: !latitude,
+    notifyOnNetworkStatusChange: true,
   });
 
   const fetchLocation = () => {
@@ -148,7 +149,7 @@ const IdentifyPage = () => {
   const commonBirds: NearbyBird[] = data?.nearbyBirds?.common ?? [];
   const uncommonBirds: NearbyBird[] = data?.nearbyBirds?.uncommon ?? [];
 
-  const isLoading = geoErrorType === null && !error && (loading || !latitude);
+  const isLoading = geoErrorType === null && !error && ((loading && !data) || !latitude);
 
   return (
     <div className="flex min-h-[calc(100dvh-5rem-1rem)] flex-col gap-4">
@@ -227,7 +228,7 @@ const IdentifyPage = () => {
               aria-label="Uppdatera fåglar nära dig"
               disabled={loading}
               onClick={() => refetch({ force: true })}
-              className="flex items-center justify-center p-1 text-muted-foreground disabled:opacity-50"
+              className="flex items-center justify-center p-1 text-muted-foreground active:opacity-70 disabled:opacity-50"
             >
               <RefreshCw className={`size-4 ${loading ? "animate-spin" : ""}`} />
             </button>

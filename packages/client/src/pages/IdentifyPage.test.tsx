@@ -141,6 +141,26 @@ describe("IdentifyPage — refresh button", () => {
     const icon = screen.getByTestId("refresh-icon");
     expect(icon.getAttribute("class")).toContain("animate-spin");
   });
+
+  it("keeps bird list visible and spins icon while refetching (data already loaded)", () => {
+    setup({
+      data: LOADED_DATA,
+      loading: true,
+      error: undefined,
+      refetch: mockRefetch,
+    });
+
+    // Bird list should remain visible — not replaced by skeleton
+    expect(screen.getByText("talgoxe")).toBeInTheDocument();
+
+    // Button should be disabled during refetch
+    const btn = screen.getByRole("button", { name: "Uppdatera fåglar nära dig" });
+    expect(btn).toBeDisabled();
+
+    // Spinner should animate
+    const icon = screen.getByTestId("refresh-icon");
+    expect(icon.getAttribute("class")).toContain("animate-spin");
+  });
 });
 
 describe("IdentifyPage geolocation error handling", () => {
