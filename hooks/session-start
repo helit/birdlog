@@ -1,0 +1,31 @@
+#!/usr/bin/env bash
+# session-start: Injects skills system context at the start of every Claude Code session.
+# Configured in .claude/settings.json under hooks.SessionStart.
+
+SCRIPT_DIR="$(cd "$(dirname "${BASH_SOURCE[0]}")" && pwd)"
+PROJECT_ROOT="$(dirname "$SCRIPT_DIR")"
+SKILLS_DIR="$PROJECT_ROOT/.claude/skills"
+
+# Build the list of available skills from SKILL.md frontmatter
+skills_context=""
+if [ -d "$SKILLS_DIR" ]; then
+  for skill_dir in "$SKILLS_DIR"/*/; do
+    skill_file="$skill_dir/SKILL.md"
+    if [ -f "$skill_file" ]; then
+      skill_name=$(basename "$skill_dir")
+      # Extract the description line from YAML frontmatter
+      description=$(awk '/^---/{f++} f==1 && /^description:/{sub(/^description: /, ""); print; exit}' "$skill_file")
+      if [ -n "$description" ]; then
+        skills_context="${skills_context}  - ${skill_name}: ${description}\n"
+      fi
+    fi
+  done
+fi
+
+# Output the context injection as JSON for Claude Code
+cat <<HOOK_OUTPUT
+{
+  "type": "text",
+  "text": "SKILLS SYSTEM ACTIVE\n\nBefore responding to any development task, check whether any skill applies. Use the Skill tool to invoke it BEFORE taking action. Even 1% confidence is enough to invoke a skill.\n\nAvailable skills:\n${skills_context}\nSkill invocation priority:\n  1. User explicit instructions (CLAUDE.md, direct requests) — highest priority\n  2. Invoked skills — override default behavior\n  3. Default behavior — lowest priority\n\nKey rules:\n  - 'This task is too simple to need a skill' is a red flag, not a reason to skip.\n  - No production code without an approved spec.\n  - No production code without a failing test first.\n  - No completion claim without fresh verification output.\n  - Fix bugs in isolation — no improvements in the same commit."
+}
+HOOK_OUTPUT
