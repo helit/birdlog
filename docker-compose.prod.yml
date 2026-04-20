@@ -12,7 +12,9 @@ services:
     # No ports exposed — only accessible from the app container
 
   app:
-    build: .
+    build:
+      context: .
+      network: host
     container_name: birdlog-app
     restart: unless-stopped
     ports:
