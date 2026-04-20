@@ -7,10 +7,22 @@ services:
       - "5432:5432"
     environment:
       POSTGRES_USER: birdlog
-      POSTGRES_PASSWORD: birdlog
+      POSTGRES_PASSWORD: birdlog2026
       POSTGRES_DB: birdlog
     volumes:
       - birdlog-data:/var/lib/postgresql/data
+
+  app:
+    image: birdlog-app
+    container_name: birdlog-app
+    restart: unless-stopped
+    ports:
+      - "4000:4000"
+    env_file: .env.prod
+    environment:
+      DATABASE_URL: "postgresql://birdlog:birdlog2026@db:5432/birdlog?schema=public"
+    depends_on:
+      - db
 
 volumes:
   birdlog-data:
