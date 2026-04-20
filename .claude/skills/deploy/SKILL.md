@@ -10,7 +10,7 @@ Deploy birdlog to production. Steps:
 2. Tell the user to run the following on TrueNAS (SSH uses password auth, so Claude cannot run it directly):
 
 ```bash
-ssh henrik@192.168.50.212
+ssh henrik@192.168.0.10
 cd /var/www/birdlog && git pull && sudo docker compose -f docker-compose.prod.yml --env-file .env.prod up -d --build
 ```
 

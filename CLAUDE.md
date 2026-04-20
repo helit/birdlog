@@ -13,13 +13,14 @@ Focus on helping the user understand birds — rarity, migration, seasonal conte
 - TDD order: write failing test → implement → confirm passing
 
 ## Development Workflow
-`/pitch` → `/issues SLUG` → `/implement N` → `/review PR_N` → merge
+`/define` → `/spec N` → `/implement N` → `/test N` → `/review N` → `/commit N` → merge
 
-Each phase runs fresh. Manual checkpoint between every phase. See `WORKFLOW.md` for full details.
+Each phase runs fresh. Manual checkpoint between every phase. See `docs/guides/ai-workflow.md` and `.claude/CLAUDE.md` for full details.
 
 ## Docs
-- `docs/prd/` — one PRD per feature (`_template_feature.md` and `_template_bug.md` — do not delete)
-- `GLOSSARY.md` — domain terms, appended by `/pitch` only
+- `docs/prd/` — PRDs for past features; new features use `docs/specs/` (see SDD workflow)
+- `docs/specs/` — one approved spec per feature (`TEMPLATE-spec.md`)
+- `GLOSSARY.md` — domain terms (canonical)
 
 ## Deployment (TrueNAS SCALE)
 - Host: TrueNAS SCALE, static IP `192.168.50.212`, user `henrik`
