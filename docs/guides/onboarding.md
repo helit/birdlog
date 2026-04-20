@@ -55,4 +55,4 @@ npm run lint                              # ESLint
 
 ## Deployment
 
-Deployed to TrueNAS SCALE at `192.168.50.212` via auto-deploy cron. SSH as `henrik` (password auth). See `CLAUDE.md` for deployment details.
+Deployed to TrueNAS SCALE at `192.168.0.10` via auto-deploy cron. SSH as `henrik` (password auth). See `CLAUDE.md` for deployment details.

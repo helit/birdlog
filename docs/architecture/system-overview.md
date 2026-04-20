@@ -23,28 +23,31 @@ Browser → React SPA → Apollo Client (GraphQL) → Express/Apollo Server → 
 ## Key Components
 
 ### Client (`packages/client/src/`)
+
 - `pages/` — route-level components (IdentifyPage, SightingsPage, BirdInfoPage, etc.)
 - `components/` — shared UI (Button, BottomSheet, HeroCard, etc.)
 - `graphql/` — Apollo Client setup, queries, mutations
 - `hooks/` — custom React hooks
 
 ### Server (`packages/server/src/`)
+
 - `schema.ts` — GraphQL schema definition
 - `resolvers/` — query and mutation resolvers
 - `services/` — business logic (rarity calculation, species enrichment, caching)
 - `middleware/` — auth, rate limiting, CORS, compression
 
 ### Database (`packages/server/prisma/`)
+
 - `schema.prisma` — Prisma schema (User, Species, Sighting)
 - `migrations/` — Prisma migration history
 
 ## External Integrations
 
-| System | Purpose |
-|--------|---------|
-| Artdatabanken SOS API | Species observation data for rarity context |
-| OpenAI GPT-4o | Photo ID (vision) and guided ID (text) |
-| Wikimedia API | Species images (proxied through server for CORS) |
+| System                | Purpose                                          |
+| --------------------- | ------------------------------------------------ |
+| Artdatabanken SOS API | Species observation data for rarity context      |
+| OpenAI GPT-4o         | Photo ID (vision) and guided ID (text)           |
+| Wikimedia API         | Species images (proxied through server for CORS) |
 
 ## Design Principles
 
@@ -56,7 +59,7 @@ Browser → React SPA → Apollo Client (GraphQL) → Express/Apollo Server → 
 
 ## Deployment
 
-- Host: TrueNAS SCALE at `192.168.50.212`
+- Host: TrueNAS SCALE at `192.168.0.10`
 - Path: `/var/www/birdlog`
 - SSL: wildcard cert via Nginx Proxy Manager
 - Auto-deploy: cron polling for new commits every 5 min

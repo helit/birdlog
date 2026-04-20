@@ -22,4 +22,4 @@ sudo docker ps --filter name=birdlog-app --format '{{.Status}}'
 
 4. Report the result.
 
-Note: The production server is TrueNAS at `192.168.50.212`, user `henrik`. The app runs at `https://birdlog.henlit.se`. SSH key auth is not set up — password is required.
+Note: The production server is TrueNAS at `192.168.0.10`, user `henrik`. The app runs at `https://birdlog.henlit.se`. SSH key auth is not set up — password is required.
