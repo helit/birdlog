@@ -20,11 +20,9 @@ RUN npx prisma generate --schema=packages/server/prisma/schema.prisma
 RUN npm run build --workspace=packages/server
 
 # Stage 4: Production image
-FROM node:20-slim AS production
+# node:20 (full image) includes OpenSSL — avoids apt-get which requires DNS inside Docker builds
+FROM node:20 AS production
 WORKDIR /app
-
-# Prisma needs OpenSSL
-RUN apt-get update -y && apt-get install -y openssl && rm -rf /var/lib/apt/lists/*
 
 COPY package*.json ./
 COPY packages/server/package*.json ./packages/server/
