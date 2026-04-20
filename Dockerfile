@@ -20,17 +20,17 @@ RUN npx prisma generate --schema=packages/server/prisma/schema.prisma
 RUN npm run build --workspace=packages/server
 
 # Stage 4: Production image
-# node:20 (full image) includes OpenSSL — avoids apt-get which requires DNS inside Docker builds
+# node:20 (full) includes OpenSSL needed by Prisma at runtime
+# node_modules copied from server-build — no npm install or network access needed here
 FROM node:20 AS production
 WORKDIR /app
 
+COPY --from=server-build /app/node_modules ./node_modules
 COPY package*.json ./
 COPY packages/server/package*.json ./packages/server/
-RUN npm ci --workspace=packages/server --omit=dev && npm install tsx
 
-# Copy Prisma schema + migrations (for migrate deploy)
+# Copy Prisma schema + migrations (for migrate deploy at startup)
 COPY packages/server/prisma/ ./packages/server/prisma/
-RUN npx prisma generate --schema=packages/server/prisma/schema.prisma
 
 # Copy built server
 COPY --from=server-build /app/packages/server/dist/ ./packages/server/dist/
