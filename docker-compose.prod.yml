@@ -3,6 +3,9 @@ services:
     image: postgres:15
     container_name: birdlog-db
     restart: unless-stopped
+    dns:
+      - 127.0.0.11
+      - 8.8.8.8
     environment:
       POSTGRES_USER: birdlog
       POSTGRES_PASSWORD: ${DB_PASSWORD}
@@ -17,6 +20,9 @@ services:
       network: host
     container_name: birdlog-app
     restart: unless-stopped
+    dns:
+      - 127.0.0.11
+      - 8.8.8.8
     ports:
       - "4000:4000"
     environment:
