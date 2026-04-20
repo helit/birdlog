@@ -1,5 +1,20 @@
 # System Overview — BirdLog
 
+## Tech Stack
+
+| Layer | Technology |
+|---|---|
+| Language / Runtime | TypeScript 5.6 + Node.js |
+| Frontend | React 18 + Vite 6 + TailwindCSS 4 + Apollo Client 3 |
+| Routing | react-router-dom v7 |
+| UI Components | shadcn/ui + Base UI |
+| Backend | Express 4 + Apollo Server 4 (GraphQL) |
+| ORM / Database | Prisma 6 + PostgreSQL |
+| Unit / Integration Tests | Vitest |
+| E2E Tests | Playwright |
+| Linter | ESLint 9 + typescript-eslint |
+| Formatter | Prettier 3 |
+
 ## Architecture
 
 BirdLog is a TypeScript monorepo with a React SPA frontend and a Node.js GraphQL backend, backed by PostgreSQL.
