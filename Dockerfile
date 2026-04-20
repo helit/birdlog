@@ -10,7 +10,7 @@ RUN npm ci
 FROM deps AS client-build
 COPY packages/client/ ./packages/client/
 COPY tsconfig.base.json ./
-RUN npm run build --workspace=packages/client
+RUN cd packages/client && npx tsc -b && npx vite build
 
 # Stage 3: Build server
 FROM deps AS server-build
