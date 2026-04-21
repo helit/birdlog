@@ -47,7 +47,7 @@ describe("nearbyBirds resolver — force flag", () => {
     getAreaDistribution = artdatabanken.getAreaDistribution as ReturnType<typeof vi.fn>;
     clearDistributionCache = artdatabanken.clearDistributionCache as ReturnType<typeof vi.fn>;
     getAreaDistribution.mockResolvedValue(FAKE_DISTRIBUTION);
-    clearDistributionCache.mockImplementation(() => {});
+    clearDistributionCache.mockResolvedValue(undefined);
 
     const mod = await import("./resolvers.js");
     resolvers = mod.resolvers;
@@ -75,7 +75,7 @@ describe("nearbyBirds resolver — force flag", () => {
 
   it("calls clearDistributionCache before getAreaDistribution when force: true", async () => {
     const callOrder: string[] = [];
-    clearDistributionCache.mockImplementation(() => { callOrder.push("clear"); });
+    clearDistributionCache.mockImplementation(async () => { callOrder.push("clear"); });
     getAreaDistribution.mockImplementation(async () => { callOrder.push("fetch"); return FAKE_DISTRIBUTION; });
 
     await resolvers.Query.nearbyBirds(undefined, { ...COORDS, force: true });

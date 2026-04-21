@@ -52,3 +52,12 @@ model Sighting {
   @@index([userId])
   @@index([speciesId])
 }
+
+model AreaDistributionCache {
+  cacheKey     String   @id
+  entries      Json
+  totalSpecies Int
+  fetchedAt    DateTime
+
+  @@index([fetchedAt])
+}

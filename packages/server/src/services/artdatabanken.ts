@@ -1,5 +1,9 @@
+import { PrismaClient } from "@prisma/client";
+
 const SOS_BASE_URL = "https://api.artdatabanken.se/species-observation-system/v1";
 const BIRDS_TAXON_ID = 4000104;
+
+const prisma = new PrismaClient();
 
 interface TaxonAggregationRecord {
   taxonId: number;
@@ -37,7 +41,7 @@ export interface DistributionEntry {
   observationCount: number;
 }
 
-interface AreaDistribution {
+export interface AreaDistribution {
   entries: DistributionEntry[];
   totalSpecies: number;
   fetchedAt: number;
@@ -45,7 +49,7 @@ interface AreaDistribution {
 
 const distributionCache = new Map<string, AreaDistribution>();
 const inflightRequests = new Map<string, Promise<AreaDistribution>>();
-const CACHE_TTL = 2 * 60 * 60 * 1000; // 2 hours
+const SWR_STALE_TTL = 60 * 60 * 1000; // 1 hour
 
 export function getDistributionCacheKey(lat: number, lng: number, date: Date): string {
   // Round to ~22km grid cells (0.2°) so nearby coordinates share cache.
@@ -55,10 +59,39 @@ export function getDistributionCacheKey(lat: number, lng: number, date: Date): s
   return `${Math.round(lat * 5)}_${Math.round(lng * 5)}_${startStr}`;
 }
 
-export function clearDistributionCache(lat: number, lng: number): void {
+export async function loadFromDb(key: string): Promise<AreaDistribution | null> {
+  const row = await prisma.areaDistributionCache.findUnique({ where: { cacheKey: key } });
+  if (!row) return null;
+  return {
+    entries: row.entries as unknown as DistributionEntry[],
+    totalSpecies: row.totalSpecies,
+    fetchedAt: row.fetchedAt.getTime(),
+  };
+}
+
+export async function saveToDb(key: string, distribution: AreaDistribution): Promise<void> {
+  const entries = distribution.entries as unknown as import("@prisma/client").Prisma.InputJsonValue;
+  await prisma.areaDistributionCache.upsert({
+    where: { cacheKey: key },
+    create: {
+      cacheKey: key,
+      entries,
+      totalSpecies: distribution.totalSpecies,
+      fetchedAt: new Date(distribution.fetchedAt),
+    },
+    update: {
+      entries,
+      totalSpecies: distribution.totalSpecies,
+      fetchedAt: new Date(distribution.fetchedAt),
+    },
+  });
+}
+
+export async function clearDistributionCache(lat: number, lng: number): Promise<void> {
   const key = getDistributionCacheKey(lat, lng, new Date());
   distributionCache.delete(key);
   inflightRequests.delete(key);
+  await prisma.areaDistributionCache.delete({ where: { cacheKey: key } }).catch(() => {});
 }
 
 // Persistent in-memory cache for taxonId → name mappings (never expires — names don't change)
@@ -325,6 +358,21 @@ async function bulkResolveTaxonNames(
   return nameMap;
 }
 
+function triggerBackgroundRefresh(
+  key: string,
+  latitude: number,
+  longitude: number,
+  date: Date,
+  thorough: boolean,
+): void {
+  if (inflightRequests.has(key)) return;
+  const promise = fetchAreaDistribution(latitude, longitude, date, thorough, key);
+  inflightRequests.set(key, promise);
+  promise
+    .finally(() => inflightRequests.delete(key))
+    .catch((e) => console.error("Background area distribution refresh failed:", e));
+}
+
 export async function getAreaDistribution(
   latitude: number,
   longitude: number,
@@ -333,11 +381,30 @@ export async function getAreaDistribution(
   const date = options?.date ?? new Date();
   const thorough = options?.thorough ?? false;
   const key = getDistributionCacheKey(latitude, longitude, date);
-  const cached = distributionCache.get(key);
-  if (cached && Date.now() - cached.fetchedAt < CACHE_TTL) return cached;
 
-  // Deduplicate in-flight requests — if another caller is already fetching
-  // the same area, reuse that promise instead of making duplicate API calls
+  // Tier 1 & 2: In-memory hit
+  const cached = distributionCache.get(key);
+  if (cached) {
+    if (Date.now() - cached.fetchedAt < SWR_STALE_TTL) {
+      // Tier 1: fresh
+      return cached;
+    }
+    // Tier 2: stale — return immediately, refresh in background
+    triggerBackgroundRefresh(key, latitude, longitude, date, thorough);
+    return cached;
+  }
+
+  // Tier 3: DB hit
+  const dbEntry = await loadFromDb(key);
+  if (dbEntry) {
+    distributionCache.set(key, dbEntry);
+    if (Date.now() - dbEntry.fetchedAt >= SWR_STALE_TTL) {
+      triggerBackgroundRefresh(key, latitude, longitude, date, thorough);
+    }
+    return dbEntry;
+  }
+
+  // Tier 4: Cold — block until fetch completes
   const inflight = inflightRequests.get(key);
   if (inflight) return inflight;
 
@@ -359,29 +426,35 @@ async function fetchAreaDistribution(
   thorough: boolean,
   cacheKey: string,
 ): Promise<AreaDistribution> {
-  // Fetch species list from TaxonAggregation (for species discovery + name resolution)
-  const taxa = await getTopBirdTaxa(latitude, longitude, 200, date);
-
-  // Fetch actual report counts per species (not individual bird counts)
-  const reportCounts = await getAllReportCounts(latitude, longitude, date);
+  const [taxa, reportCounts] = await Promise.all([
+    getTopBirdTaxa(latitude, longitude, 200, date),
+    getAllReportCounts(latitude, longitude, date),
+  ]);
 
   // Resolve names — thorough mode uses individual fallbacks for full coverage
   const taxonIds = taxa.map((t) => t.taxonId);
   const nameMap = await bulkResolveTaxonNames(taxonIds, thorough);
 
+  let fallbackCount = 0;
   const entries: DistributionEntry[] = taxa
     .map((t) => {
       const names = nameMap.get(t.taxonId);
       if (!names) return null;
+      const fromSearch = reportCounts.get(t.taxonId);
+      if (fromSearch === undefined) fallbackCount++;
       return {
         taxonId: t.taxonId,
         scientificName: names.scientificName,
         vernacularName: names.vernacularName,
-        observationCount: reportCounts.get(t.taxonId) ?? 0,
+        observationCount: fromSearch ?? t.observationCount,
       };
     })
     .filter((e): e is DistributionEntry => e !== null)
     .filter((e) => ![...EXCLUDED_SPECIES].some((ex) => e.scientificName.toLowerCase().includes(ex)));
+
+  if (fallbackCount > 0) {
+    console.log(`[fetchAreaDistribution] ${fallbackCount} entries fell back to TaxonAggregation count`);
+  }
 
   const distribution: AreaDistribution = {
     entries,
@@ -390,6 +463,7 @@ async function fetchAreaDistribution(
   };
 
   distributionCache.set(cacheKey, distribution);
+  saveToDb(cacheKey, distribution).catch((e) => console.error("Failed to save distribution to DB:", e));
   return distribution;
 }
 
