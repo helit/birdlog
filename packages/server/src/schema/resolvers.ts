@@ -168,7 +168,7 @@ export const resolvers = {
       const cacheKey = `nearby_${Math.round(latitude * 5)}_${Math.round(longitude * 5)}`;
       if (force) {
         nearbyBirdsCache.delete(cacheKey);
-        clearDistributionCache(latitude, longitude);
+        await clearDistributionCache(latitude, longitude);
       }
       const cached = nearbyBirdsCache.get(cacheKey);
       if (cached && Date.now() - cached.fetchedAt < NEARBY_BIRDS_TTL) {
