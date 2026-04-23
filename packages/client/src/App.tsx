@@ -15,6 +15,9 @@ import PhotoIdentifyPage from "./pages/PhotoIdentifyPage.js";
 import GuidedIdentifyPage from "./pages/GuidedIdentifyPage.js";
 import PickLocationPage from "./pages/PickLocationPage.js";
 import BirdInfoPage from "./pages/BirdInfoPage.js";
+import { FagelbokLandingPage } from "./pages/FagelbokLandingPage.js";
+import { FagelbokOrderPage } from "./pages/FagelbokOrderPage.js";
+import { FagelbokFamilyPage } from "./pages/FagelbokFamilyPage.js";
 
 function App() {
   const { user } = useAuth();
@@ -42,6 +45,9 @@ function App() {
               <Route path="/edit/:id" element={<SightingFormPage key="edit" />} />
               <Route path="/pick-location" element={<PickLocationPage />} />
               <Route path="/bird/:scientificName" element={<BirdInfoPage />} />
+              <Route path="/guidebook" element={<FagelbokLandingPage />} />
+              <Route path="/guidebook/order/:orderSlug" element={<FagelbokOrderPage />} />
+              <Route path="/guidebook/family/:familySlug" element={<FagelbokFamilyPage />} />
               <Route path="/life-list" element={<LifeListPage />} />
               <Route path="/life-list/:speciesId" element={<LifeListDetailPage />} />
               <Route path="/profile" element={<ProfilePage />} />

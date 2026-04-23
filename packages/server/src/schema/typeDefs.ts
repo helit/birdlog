@@ -75,6 +75,29 @@ export const typeDefs = gql`
     rank: Int
   }
 
+  type Order {
+    slug: String!
+    swedishName: String
+    scientificName: String!
+  }
+
+  type Family {
+    slug: String!
+    swedishName: String
+    scientificName: String!
+    order: Order!
+  }
+
+  type OrderDetail {
+    order: Order!
+    families: [Family!]!
+  }
+
+  type FamilyDetail {
+    family: Family!
+    species: [Species!]!
+  }
+
   type Query {
     species: [Species!]!
     speciesById(id: ID!): Species
@@ -87,6 +110,10 @@ export const typeDefs = gql`
     speciesByScientificName(scientificName: String!, vernacularName: String): Species
     myStats: UserStats!
     speciesRarity(scientificName: String!, latitude: Float!, longitude: Float!): SpeciesRarity!
+    allOrders: [Order!]!
+    order(slug: String!): OrderDetail
+    family(slug: String!): FamilyDetail
+    speciesSearch(query: String!): [Species!]!
   }
 
   type Mutation {

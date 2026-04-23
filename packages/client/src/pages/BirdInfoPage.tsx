@@ -56,8 +56,11 @@ const BirdInfoPage = () => {
         Tillbaka
       </button>
 
-      <div className="flex items-center gap-4">
-        <div className="size-20 flex-shrink-0 overflow-hidden rounded-xl bg-primary/10">
+      <div className="flex flex-col gap-3">
+        <div
+          data-testid="bird-hero-image"
+          className="aspect-[4/3] w-full overflow-hidden rounded-xl bg-primary/10"
+        >
           {species.imageUrl ? (
             <img
               src={proxyImageUrl(species.imageUrl) ?? undefined}
@@ -72,7 +75,7 @@ const BirdInfoPage = () => {
           <div
             className={`${species.imageUrl ? "hidden" : ""} flex size-full items-center justify-center`}
           >
-            <BirdIcon className="size-8 text-primary/40" />
+            <BirdIcon className="size-16 text-primary/40" />
           </div>
         </div>
         <div>

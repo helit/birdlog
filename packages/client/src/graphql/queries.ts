@@ -88,7 +88,6 @@ export const MY_LIFE_LIST = gql`
         scientificName
         englishName
         family
-        description
         imageUrl
       }
       sightingCount
@@ -132,6 +131,65 @@ export const SPECIES_RARITY = gql`
       observationCount
       totalSpeciesInArea
       rank
+    }
+  }
+`;
+
+export const GET_ALL_ORDERS = gql`
+  query GetAllOrders {
+    allOrders {
+      slug
+      swedishName
+      scientificName
+    }
+  }
+`;
+
+export const GET_ORDER_BY_SLUG = gql`
+  query GetOrderBySlug($slug: String!) {
+    order(slug: $slug) {
+      order {
+        slug
+        swedishName
+        scientificName
+      }
+      families {
+        slug
+        swedishName
+        scientificName
+      }
+    }
+  }
+`;
+
+export const GET_FAMILY_BY_SLUG = gql`
+  query GetFamilyBySlug($slug: String!) {
+    family(slug: $slug) {
+      family {
+        slug
+        swedishName
+        scientificName
+        order {
+          slug
+          swedishName
+          scientificName
+        }
+      }
+      species {
+        id
+        swedishName
+        scientificName
+      }
+    }
+  }
+`;
+
+export const SPECIES_SEARCH = gql`
+  query SpeciesSearch($query: String!) {
+    speciesSearch(query: $query) {
+      id
+      swedishName
+      scientificName
     }
   }
 `;

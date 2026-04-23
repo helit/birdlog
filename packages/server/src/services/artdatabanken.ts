@@ -559,3 +559,108 @@ export function calculateSpeciesRarity(
     rank,
   };
 }
+
+// --- Taxonomy helpers ---
+//
+// Endpoint strategy (to be validated against live SOS API during Task 5 backfill):
+//   - findTaxonIdByScientificName: POST /Observations/Search with `taxon.scientificNames`
+//     filter; returns the first matching record's taxon.id.
+//   - getTaxonParents: POST /Observations/Search with `taxon.ids` + `output.fieldSet: "All"`;
+//     reads Family and Order entries from `taxon.higherClassification[]`.
+// If the live API does not expose `higherClassification`, switch to the Taxonomy service
+// endpoint (`/taxonservice/v1/taxa/{id}/parents`) and update these helpers.
+
+export interface TaxonRef {
+  taxonId: number;
+  scientificName: string;
+  vernacularName: string | null;
+}
+
+export interface TaxonParents {
+  family: TaxonRef | null;
+  order: TaxonRef | null;
+}
+
+interface HigherClassificationEntry {
+  taxonId: number;
+  scientificName: string;
+  vernacularName?: string;
+  taxonRank: string;
+}
+
+function toTaxonRef(entry: HigherClassificationEntry): TaxonRef {
+  const vn = entry.vernacularName;
+  return {
+    taxonId: entry.taxonId,
+    scientificName: entry.scientificName,
+    vernacularName: vn && vn.length > 0 ? vn : null,
+  };
+}
+
+export async function findTaxonIdByScientificName(
+  scientificName: string,
+): Promise<number | null> {
+  const res = await fetch(
+    `${SOS_BASE_URL}/Observations/Search?skip=0&take=1`,
+    {
+      method: "POST",
+      headers: {
+        "Content-Type": "application/json",
+        "Ocp-Apim-Subscription-Key": getApiKey(),
+      },
+      signal: AbortSignal.timeout(5000),
+      body: JSON.stringify({
+        taxon: { scientificNames: [scientificName] },
+        output: { fieldSet: "Minimum" },
+      }),
+    },
+  );
+
+  if (!res.ok) {
+    throw new Error(
+      `Artdatabanken findTaxonIdByScientificName failed: HTTP ${res.status} for "${scientificName}"`,
+    );
+  }
+  const data: ObservationSearchResponse = await res.json();
+  if (data.records.length === 0) return null;
+  return data.records[0].taxon.id;
+}
+
+export async function getTaxonParents(taxonId: number): Promise<TaxonParents> {
+  const empty: TaxonParents = { family: null, order: null };
+
+  const res = await fetch(
+    `${SOS_BASE_URL}/Observations/Search?skip=0&take=1`,
+    {
+      method: "POST",
+      headers: {
+        "Content-Type": "application/json",
+        "Ocp-Apim-Subscription-Key": getApiKey(),
+      },
+      signal: AbortSignal.timeout(5000),
+      body: JSON.stringify({
+        taxon: { ids: [taxonId] },
+        output: { fieldSet: "All" },
+      }),
+    },
+  );
+
+  if (!res.ok) {
+    throw new Error(
+      `Artdatabanken getTaxonParents failed: HTTP ${res.status} for taxonId=${taxonId}`,
+    );
+  }
+  const data = (await res.json()) as {
+    records?: Array<{ taxon?: { higherClassification?: HigherClassificationEntry[] } }>;
+  };
+  const higher = data.records?.[0]?.taxon?.higherClassification;
+  if (!higher || !Array.isArray(higher)) return empty;
+
+  const familyEntry = higher.find((e) => e.taxonRank === "Family");
+  const orderEntry = higher.find((e) => e.taxonRank === "Order");
+
+  return {
+    family: familyEntry ? toTaxonRef(familyEntry) : null,
+    order: orderEntry ? toTaxonRef(orderEntry) : null,
+  };
+}

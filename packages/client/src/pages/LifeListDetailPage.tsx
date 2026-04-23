@@ -1,10 +1,10 @@
 import { MyLifeList, SightingBySpecies } from "@/utils/types";
 import { format } from "date-fns";
 import { sv } from "date-fns/locale";
-import { proxyImageUrl } from "@/lib/utils";
-import { ArrowLeftIcon, BirdIcon, MapPinIcon } from "lucide-react";
-import { useLocation, useNavigate } from "react-router-dom";
-import { Button } from "@/components/ui/button";
+import { cn, proxyImageUrl } from "@/lib/utils";
+import { ArrowLeftIcon, BirdIcon, BookOpenIcon, MapPinIcon } from "lucide-react";
+import { Link, useLocation, useNavigate } from "react-router-dom";
+import { Button, buttonVariants } from "@/components/ui/button";
 import { useQuery } from "@apollo/client";
 import { MY_SIGHTINGS_BY_SPECIES } from "@/graphql/queries";
 import { Spinner } from "@/components/ui/spinner";
@@ -48,8 +48,11 @@ const LifeListDetailPage = () => {
         Tillbaka
       </button>
 
-      <div className="flex items-center gap-4">
-        <div className="size-20 flex-shrink-0 overflow-hidden rounded-xl bg-primary/10">
+      <div className="flex flex-col gap-3">
+        <div
+          data-testid="species-image-container"
+          className="aspect-[4/3] w-full overflow-hidden rounded-xl bg-primary/10"
+        >
           {lifeList.species.imageUrl ? (
             <img
               src={proxyImageUrl(lifeList.species.imageUrl) ?? undefined}
@@ -64,7 +67,7 @@ const LifeListDetailPage = () => {
           <div
             className={`${lifeList.species.imageUrl ? "hidden" : ""} flex size-full items-center justify-center`}
           >
-            <BirdIcon className="size-8 text-primary/40" />
+            <BirdIcon className="size-16 text-primary/40" />
           </div>
         </div>
         <div>
@@ -75,11 +78,13 @@ const LifeListDetailPage = () => {
         </div>
       </div>
 
-      {lifeList.species.description && (
-        <p className="text-sm leading-relaxed text-muted-foreground">
-          {lifeList.species.description}
-        </p>
-      )}
+      <Link
+        to={`/bird/${encodeURIComponent(lifeList.species.scientificName)}`}
+        className={cn(buttonVariants({ variant: "default" }), "w-full")}
+      >
+        <BookOpenIcon className="mr-2 h-4 w-4" aria-hidden="true" />
+        Mer om arten
+      </Link>
 
       <div className="flex flex-col gap-3 rounded-lg bg-card p-4 shadow-sm">
         <div className="flex items-center justify-between">

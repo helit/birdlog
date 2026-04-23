@@ -9,6 +9,8 @@ import {
   calculateSpeciesRarity,
   clearDistributionCache,
 } from "../services/artdatabanken.js";
+import { scientificToSlug } from "../utils/slug.js";
+import { normalizeForSearch } from "../utils/normalize.js";
 
 const prisma = new PrismaClient();
 
@@ -67,6 +69,69 @@ function validateStringLength(value: string | null | undefined, field: string, m
 // Cache nearby birds results for 24h per area grid cell
 const NEARBY_BIRDS_TTL = 24 * 60 * 60 * 1000;
 const nearbyBirdsCache = new Map<string, { result: unknown; fetchedAt: number }>();
+
+const svCollator = new Intl.Collator("sv", { sensitivity: "base" });
+
+interface OrderNode {
+  slug: string;
+  swedishName: string | null;
+  scientificName: string;
+}
+
+interface FamilyNode {
+  slug: string;
+  swedishName: string | null;
+  scientificName: string;
+  order: OrderNode;
+}
+
+function orderKey(row: { swedishName: string | null; scientificName: string }): string {
+  return row.swedishName ?? `￿${row.scientificName}`;
+}
+
+function sortBySwedishName<T extends { swedishName: string | null; scientificName: string }>(rows: T[]): T[] {
+  return [...rows].sort((a, b) => svCollator.compare(orderKey(a), orderKey(b)));
+}
+
+function uniqueOrders(
+  rows: Array<{ order: string | null; orderScientific: string | null }>,
+): OrderNode[] {
+  const byScientific = new Map<string, OrderNode>();
+  for (const row of rows) {
+    if (!row.orderScientific) continue;
+    const existing = byScientific.get(row.orderScientific);
+    // Prefer rows with a non-null Swedish name so mixed backfill results
+    // don't collapse the label to scientific-italic on the detail view.
+    if (!existing || (existing.swedishName === null && row.order !== null)) {
+      byScientific.set(row.orderScientific, {
+        slug: scientificToSlug(row.orderScientific),
+        swedishName: row.order,
+        scientificName: row.orderScientific,
+      });
+    }
+  }
+  return sortBySwedishName([...byScientific.values()]);
+}
+
+function uniqueFamilies(
+  rows: Array<{ family: string | null; familyScientific: string | null }>,
+  parent: OrderNode,
+): FamilyNode[] {
+  const byScientific = new Map<string, FamilyNode>();
+  for (const row of rows) {
+    if (!row.familyScientific) continue;
+    const existing = byScientific.get(row.familyScientific);
+    if (!existing || (existing.swedishName === null && row.family !== null)) {
+      byScientific.set(row.familyScientific, {
+        slug: scientificToSlug(row.familyScientific),
+        swedishName: row.family,
+        scientificName: row.familyScientific,
+        order: parent,
+      });
+    }
+  }
+  return sortBySwedishName([...byScientific.values()]);
+}
 
 export const resolvers = {
   Species: {
@@ -264,6 +329,134 @@ export const resolvers = {
     ) => {
       const distribution = await getAreaDistribution(latitude, longitude);
       return calculateSpeciesRarity(scientificName, distribution);
+    },
+
+    allOrders: async (): Promise<OrderNode[]> => {
+      const rows = await prisma.species.findMany({
+        where: { orderScientific: { not: null } },
+        select: { order: true, orderScientific: true },
+      });
+      return uniqueOrders(rows);
+    },
+
+    order: async (
+      _: unknown,
+      { slug }: { slug: string },
+    ): Promise<{ order: OrderNode; families: FamilyNode[] } | null> => {
+      const orderRows = await prisma.species.findMany({
+        where: { orderScientific: { not: null } },
+        select: { order: true, orderScientific: true },
+      });
+      const matchedOrder = uniqueOrders(orderRows).find((o) => o.slug === slug);
+      if (!matchedOrder) return null;
+
+      const familyRows = await prisma.species.findMany({
+        where: {
+          orderScientific: matchedOrder.scientificName,
+          familyScientific: { not: null },
+        },
+        select: { family: true, familyScientific: true },
+      });
+      return {
+        order: matchedOrder,
+        families: uniqueFamilies(familyRows, matchedOrder),
+      };
+    },
+
+    family: async (
+      _: unknown,
+      { slug }: { slug: string },
+    ): Promise<{ family: FamilyNode; species: Array<{ swedishName: string; scientificName: string }> } | null> => {
+      const familyRows = await prisma.species.findMany({
+        where: {
+          familyScientific: { not: null },
+          orderScientific: { not: null },
+        },
+        select: {
+          family: true,
+          familyScientific: true,
+          order: true,
+          orderScientific: true,
+        },
+      });
+
+      const matchRow = familyRows.find(
+        (r) => r.familyScientific && scientificToSlug(r.familyScientific) === slug,
+      );
+      if (!matchRow || !matchRow.familyScientific || !matchRow.orderScientific) {
+        return null;
+      }
+
+      const familySwedish =
+        familyRows.find(
+          (r) =>
+            r.familyScientific === matchRow.familyScientific && r.family !== null,
+        )?.family ?? null;
+      const orderSwedish =
+        familyRows.find(
+          (r) =>
+            r.orderScientific === matchRow.orderScientific && r.order !== null,
+        )?.order ?? null;
+
+      const orderNode: OrderNode = {
+        slug: scientificToSlug(matchRow.orderScientific),
+        swedishName: orderSwedish,
+        scientificName: matchRow.orderScientific,
+      };
+      const familyNode: FamilyNode = {
+        slug,
+        swedishName: familySwedish,
+        scientificName: matchRow.familyScientific,
+        order: orderNode,
+      };
+
+      const species = await prisma.species.findMany({
+        where: { familyScientific: matchRow.familyScientific },
+      });
+      const sorted = [...species].sort((a, b) =>
+        svCollator.compare(a.swedishName, b.swedishName),
+      );
+      return { family: familyNode, species: sorted };
+    },
+
+    speciesSearch: async (
+      _: unknown,
+      { query }: { query: string },
+    ) => {
+      const trimmed = query.trim();
+      if (trimmed.length === 0) return [];
+
+      const coarse = await prisma.species.findMany({
+        where: {
+          OR: [
+            { swedishName: { contains: trimmed, mode: "insensitive" } },
+            { scientificName: { contains: trimmed, mode: "insensitive" } },
+          ],
+        },
+        select: { id: true, swedishName: true, scientificName: true },
+      });
+
+      let results: Array<{ id: string; swedishName: string; scientificName: string }> = coarse;
+
+      if (results.length < 5) {
+        const all = await prisma.species.findMany({
+          select: { id: true, swedishName: true, scientificName: true },
+        });
+        const needle = normalizeForSearch(trimmed);
+        const jsMatches = all.filter(
+          (s) =>
+            normalizeForSearch(s.swedishName).includes(needle) ||
+            normalizeForSearch(s.scientificName).includes(needle),
+        );
+        const byId = new Map(results.map((r) => [r.id, r]));
+        for (const m of jsMatches) byId.set(m.id, m);
+        results = [...byId.values()];
+      }
+
+      const sorted = [...results].sort((a, b) =>
+        svCollator.compare(a.swedishName, b.swedishName),
+      );
+      return sorted.slice(0, 100);
     },
 
     myStats: async (_: unknown, __: unknown, context: GraphQLContext) => {
