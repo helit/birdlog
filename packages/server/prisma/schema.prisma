@@ -19,14 +19,20 @@ model User {
 }
 
 model Species {
-  id             String     @id @default(cuid())
-  swedishName    String
-  scientificName String     @unique
-  englishName    String?
-  family         String?
-  description    String?
-  imageUrl       String?
-  sightings      Sighting[]
+  id               String     @id @default(cuid())
+  swedishName      String
+  scientificName   String     @unique
+  englishName      String?
+  family           String?
+  description      String?
+  imageUrl         String?
+  order            String?
+  orderScientific  String?
+  familyScientific String?
+  sightings        Sighting[]
+
+  @@index([orderScientific])
+  @@index([familyScientific])
 }
 
 model Sighting {

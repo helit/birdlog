@@ -443,3 +443,199 @@ describe("fetchAreaDistribution() — taxon ID mismatch fallback", () => {
     expect(entry!.observationCount).toBe(7);
   });
 });
+
+// --- Task 3: taxonomy helpers ---
+
+describe("findTaxonIdByScientificName()", () => {
+  beforeEach(() => {
+    vi.resetModules();
+    process.env.ARTDATABANKEN_API_KEY = "test-key";
+    resetPrismaMocks();
+  });
+  afterEach(() => {
+    vi.restoreAllMocks();
+  });
+
+  it("returns the taxonId of the first matching record", async () => {
+    const mockFetch = vi.fn().mockResolvedValue({
+      ok: true,
+      json: async () => ({
+        totalCount: 1,
+        records: [
+          { taxon: { id: 267169, scientificName: "Parus major", vernacularName: "talgoxe" } },
+        ],
+      }),
+    });
+    vi.stubGlobal("fetch", mockFetch);
+
+    const { findTaxonIdByScientificName } = await import("./artdatabanken.js");
+    const result = await findTaxonIdByScientificName("Parus major");
+
+    expect(result).toBe(267169);
+  });
+
+  it("returns null when the response contains no records", async () => {
+    const mockFetch = vi.fn().mockResolvedValue({
+      ok: true,
+      json: async () => ({ totalCount: 0, records: [] }),
+    });
+    vi.stubGlobal("fetch", mockFetch);
+
+    const { findTaxonIdByScientificName } = await import("./artdatabanken.js");
+    const result = await findTaxonIdByScientificName("Nonexistent species");
+
+    expect(result).toBeNull();
+  });
+
+  it("throws on non-2xx so the caller can distinguish transport errors from 'not found'", async () => {
+    const mockFetch = vi.fn().mockResolvedValue({ ok: false, status: 500 });
+    vi.stubGlobal("fetch", mockFetch);
+
+    const { findTaxonIdByScientificName } = await import("./artdatabanken.js");
+    await expect(findTaxonIdByScientificName("Parus major")).rejects.toThrow(/HTTP 500/);
+  });
+
+  it("throws on 401 (auth failure) rather than returning null", async () => {
+    const mockFetch = vi.fn().mockResolvedValue({ ok: false, status: 401 });
+    vi.stubGlobal("fetch", mockFetch);
+
+    const { findTaxonIdByScientificName } = await import("./artdatabanken.js");
+    await expect(findTaxonIdByScientificName("Parus major")).rejects.toThrow(/HTTP 401/);
+  });
+});
+
+describe("getTaxonParents()", () => {
+  beforeEach(() => {
+    vi.resetModules();
+    process.env.ARTDATABANKEN_API_KEY = "test-key";
+    resetPrismaMocks();
+  });
+  afterEach(() => {
+    vi.restoreAllMocks();
+  });
+
+  it("returns family and order TaxonRefs from higherClassification", async () => {
+    const mockFetch = vi.fn().mockResolvedValue({
+      ok: true,
+      json: async () => ({
+        totalCount: 1,
+        records: [
+          {
+            taxon: {
+              id: 267169,
+              scientificName: "Parus major",
+              vernacularName: "talgoxe",
+              higherClassification: [
+                { taxonId: 6001111, scientificName: "Paridae", vernacularName: "mesar", taxonRank: "Family" },
+                { taxonId: 6002222, scientificName: "Passeriformes", vernacularName: "tättingar", taxonRank: "Order" },
+                { taxonId: 6003333, scientificName: "Aves", vernacularName: "fåglar", taxonRank: "Class" },
+              ],
+            },
+          },
+        ],
+      }),
+    });
+    vi.stubGlobal("fetch", mockFetch);
+
+    const { getTaxonParents } = await import("./artdatabanken.js");
+    const result = await getTaxonParents(267169);
+
+    expect(result).toEqual({
+      family: { taxonId: 6001111, scientificName: "Paridae", vernacularName: "mesar" },
+      order: { taxonId: 6002222, scientificName: "Passeriformes", vernacularName: "tättingar" },
+    });
+  });
+
+  it("returns nulls when higherClassification is missing", async () => {
+    const mockFetch = vi.fn().mockResolvedValue({
+      ok: true,
+      json: async () => ({
+        totalCount: 1,
+        records: [{ taxon: { id: 267169, scientificName: "Parus major", vernacularName: "talgoxe" } }],
+      }),
+    });
+    vi.stubGlobal("fetch", mockFetch);
+
+    const { getTaxonParents } = await import("./artdatabanken.js");
+    const result = await getTaxonParents(267169);
+
+    expect(result).toEqual({ family: null, order: null });
+  });
+
+  it("returns nulls when the record has no Family/Order entries", async () => {
+    const mockFetch = vi.fn().mockResolvedValue({
+      ok: true,
+      json: async () => ({
+        totalCount: 1,
+        records: [
+          {
+            taxon: {
+              id: 267169,
+              scientificName: "Parus major",
+              vernacularName: "talgoxe",
+              higherClassification: [
+                { taxonId: 6003333, scientificName: "Aves", vernacularName: "fåglar", taxonRank: "Class" },
+              ],
+            },
+          },
+        ],
+      }),
+    });
+    vi.stubGlobal("fetch", mockFetch);
+
+    const { getTaxonParents } = await import("./artdatabanken.js");
+    const result = await getTaxonParents(267169);
+
+    expect(result).toEqual({ family: null, order: null });
+  });
+
+  it("returns nulls when there are no records", async () => {
+    const mockFetch = vi.fn().mockResolvedValue({
+      ok: true,
+      json: async () => ({ totalCount: 0, records: [] }),
+    });
+    vi.stubGlobal("fetch", mockFetch);
+
+    const { getTaxonParents } = await import("./artdatabanken.js");
+    const result = await getTaxonParents(267169);
+
+    expect(result).toEqual({ family: null, order: null });
+  });
+
+  it("throws on non-2xx so the backfill can log the root cause", async () => {
+    const mockFetch = vi.fn().mockResolvedValue({ ok: false, status: 503 });
+    vi.stubGlobal("fetch", mockFetch);
+
+    const { getTaxonParents } = await import("./artdatabanken.js");
+    await expect(getTaxonParents(267169)).rejects.toThrow(/HTTP 503/);
+  });
+
+  it("treats empty-string vernacularName as null on the returned TaxonRef", async () => {
+    const mockFetch = vi.fn().mockResolvedValue({
+      ok: true,
+      json: async () => ({
+        totalCount: 1,
+        records: [
+          {
+            taxon: {
+              id: 267169,
+              scientificName: "Parus major",
+              vernacularName: "talgoxe",
+              higherClassification: [
+                { taxonId: 6001111, scientificName: "Paridae", vernacularName: "", taxonRank: "Family" },
+                { taxonId: 6002222, scientificName: "Passeriformes", vernacularName: "", taxonRank: "Order" },
+              ],
+            },
+          },
+        ],
+      }),
+    });
+    vi.stubGlobal("fetch", mockFetch);
+
+    const { getTaxonParents } = await import("./artdatabanken.js");
+    const result = await getTaxonParents(267169);
+
+    expect(result.family?.vernacularName).toBeNull();
+    expect(result.order?.vernacularName).toBeNull();
+  });
+});

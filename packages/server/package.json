@@ -11,7 +11,8 @@
     "typecheck": "tsc --noEmit",
     "db:migrate": "prisma migrate dev",
     "db:seed": "tsx prisma/seed.ts",
-    "db:studio": "prisma studio"
+    "db:studio": "prisma studio",
+    "backfill:taxonomy": "tsx --env-file=.env prisma/backfill-taxonomy.ts"
   },
   "dependencies": {
     "@apollo/server": "^4.11.0",
