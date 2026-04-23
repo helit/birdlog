@@ -19,6 +19,10 @@ Terms and concepts used in this project. Reference this when encountering unfami
 - **Bird info page** — general species page (`/bird/:slug`); shows Wikipedia info + live rarity
 - **Species enrichment** — server-side pipeline: AI result → Wikipedia image fetch → DB upsert
 - **Image proxy** — Express endpoint that proxies Wikimedia image URLs (CORS + caching)
+- **Guidebook (Fågelbok)** — in-app bird dictionary feature at `/guidebook`; searchable, with Order → Family → Species drill-down of the seeded Swedish bird universe
+- **Order (Ordning)** — taxonomic rank above family (e.g. Passeriformes / Tättingar); added to `Species` in this feature
+- **Family (Familj)** — taxonomic rank above species (e.g. Paridae / Mesar); `Species.family` holds the Swedish name, `Species.familyScientific` the Latin name
+- **Taxonomy backfill** — one-time script (`npm run backfill:taxonomy`) that enriches existing seeded species with order + scientific family/order via Artdatabanken, with a static JSON fallback
 
 ## UI Patterns
 - **sort key** — an identifier string for a sighting sort order (e.g. `date-desc`, `species-asc`) (Swedish UI: "Sortering")
@@ -28,5 +32,5 @@ Terms and concepts used in this project. Reference this when encountering unfami
 ## Phases
 - **Phase 7b** — current: hardening & quality pass (error handling, validation, a11y, code quality, testing, production)
 - **Phase 7c** — paused: migration data, seasonal info, nearby hotspots
-- **Phase 8** — bird dictionary / discover feature
+- **Phase 8** — Fågelbok (guidebook): bird dictionary with taxonomic browse and search
 - **Phase 9** — PWA & offline (deferred)
