@@ -444,9 +444,9 @@ describe("fetchAreaDistribution() — taxon ID mismatch fallback", () => {
   });
 });
 
-// --- Task 3: taxonomy helpers ---
+// --- Task 3: taxonomy helpers (bulk) ---
 
-describe("findTaxonIdByScientificName()", () => {
+describe("listAllBirdTaxonIds()", () => {
   beforeEach(() => {
     vi.resetModules();
     process.env.ARTDATABANKEN_API_KEY = "test-key";
@@ -456,175 +456,95 @@ describe("findTaxonIdByScientificName()", () => {
     vi.restoreAllMocks();
   });
 
-  it("returns the taxonId of the first matching record", async () => {
+  it("returns a flat list of taxonIds from a single page", async () => {
     const mockFetch = vi.fn().mockResolvedValue({
       ok: true,
       json: async () => ({
-        totalCount: 1,
+        totalCount: 3,
         records: [
-          { taxon: { id: 267169, scientificName: "Parus major", vernacularName: "talgoxe" } },
+          { taxonId: 100, observationCount: 10 },
+          { taxonId: 200, observationCount: 20 },
+          { taxonId: 300, observationCount: 30 },
         ],
       }),
     });
     vi.stubGlobal("fetch", mockFetch);
 
-    const { findTaxonIdByScientificName } = await import("./artdatabanken.js");
-    const result = await findTaxonIdByScientificName("Parus major");
+    const { listAllBirdTaxonIds } = await import("./artdatabanken.js");
+    const ids = await listAllBirdTaxonIds();
 
-    expect(result).toBe(267169);
+    expect(ids).toEqual([100, 200, 300]);
+    expect(mockFetch).toHaveBeenCalledTimes(1);
   });
 
-  it("returns null when the response contains no records", async () => {
+  it("omits skip/take so SOS returns every record in one call", async () => {
+    const records = Array.from({ length: 1301 }, (_, i) => ({
+      taxonId: i + 1,
+      observationCount: 1,
+    }));
     const mockFetch = vi.fn().mockResolvedValue({
       ok: true,
-      json: async () => ({ totalCount: 0, records: [] }),
+      json: async () => ({ totalCount: 1301, records }),
     });
     vi.stubGlobal("fetch", mockFetch);
 
-    const { findTaxonIdByScientificName } = await import("./artdatabanken.js");
-    const result = await findTaxonIdByScientificName("Nonexistent species");
+    const { listAllBirdTaxonIds } = await import("./artdatabanken.js");
+    const ids = await listAllBirdTaxonIds();
 
-    expect(result).toBeNull();
+    expect(ids).toHaveLength(1301);
+    expect(mockFetch).toHaveBeenCalledTimes(1);
+    const [url] = mockFetch.mock.calls[0];
+    expect(url).not.toContain("skip=");
+    expect(url).not.toContain("take=");
   });
 
-  it("throws on non-2xx so the caller can distinguish transport errors from 'not found'", async () => {
-    const mockFetch = vi.fn().mockResolvedValue({ ok: false, status: 500 });
-    vi.stubGlobal("fetch", mockFetch);
-
-    const { findTaxonIdByScientificName } = await import("./artdatabanken.js");
-    await expect(findTaxonIdByScientificName("Parus major")).rejects.toThrow(/HTTP 500/);
-  });
-
-  it("throws on 401 (auth failure) rather than returning null", async () => {
-    const mockFetch = vi.fn().mockResolvedValue({ ok: false, status: 401 });
-    vi.stubGlobal("fetch", mockFetch);
-
-    const { findTaxonIdByScientificName } = await import("./artdatabanken.js");
-    await expect(findTaxonIdByScientificName("Parus major")).rejects.toThrow(/HTTP 401/);
-  });
-});
-
-describe("getTaxonParents()", () => {
-  beforeEach(() => {
-    vi.resetModules();
-    process.env.ARTDATABANKEN_API_KEY = "test-key";
-    resetPrismaMocks();
-  });
-  afterEach(() => {
-    vi.restoreAllMocks();
-  });
-
-  it("returns family and order TaxonRefs from higherClassification", async () => {
-    const mockFetch = vi.fn().mockResolvedValue({
-      ok: true,
-      json: async () => ({
-        totalCount: 1,
-        records: [
-          {
-            taxon: {
-              id: 267169,
-              scientificName: "Parus major",
-              vernacularName: "talgoxe",
-              higherClassification: [
-                { taxonId: 6001111, scientificName: "Paridae", vernacularName: "mesar", taxonRank: "Family" },
-                { taxonId: 6002222, scientificName: "Passeriformes", vernacularName: "tättingar", taxonRank: "Order" },
-                { taxonId: 6003333, scientificName: "Aves", vernacularName: "fåglar", taxonRank: "Class" },
-              ],
-            },
-          },
-        ],
-      }),
-    });
-    vi.stubGlobal("fetch", mockFetch);
-
-    const { getTaxonParents } = await import("./artdatabanken.js");
-    const result = await getTaxonParents(267169);
-
-    expect(result).toEqual({
-      family: { taxonId: 6001111, scientificName: "Paridae", vernacularName: "mesar" },
-      order: { taxonId: 6002222, scientificName: "Passeriformes", vernacularName: "tättingar" },
-    });
-  });
-
-  it("returns nulls when higherClassification is missing", async () => {
-    const mockFetch = vi.fn().mockResolvedValue({
-      ok: true,
-      json: async () => ({
-        totalCount: 1,
-        records: [{ taxon: { id: 267169, scientificName: "Parus major", vernacularName: "talgoxe" } }],
-      }),
-    });
-    vi.stubGlobal("fetch", mockFetch);
-
-    const { getTaxonParents } = await import("./artdatabanken.js");
-    const result = await getTaxonParents(267169);
-
-    expect(result).toEqual({ family: null, order: null });
-  });
-
-  it("returns nulls when the record has no Family/Order entries", async () => {
-    const mockFetch = vi.fn().mockResolvedValue({
-      ok: true,
-      json: async () => ({
-        totalCount: 1,
-        records: [
-          {
-            taxon: {
-              id: 267169,
-              scientificName: "Parus major",
-              vernacularName: "talgoxe",
-              higherClassification: [
-                { taxonId: 6003333, scientificName: "Aves", vernacularName: "fåglar", taxonRank: "Class" },
-              ],
-            },
-          },
-        ],
-      }),
-    });
-    vi.stubGlobal("fetch", mockFetch);
-
-    const { getTaxonParents } = await import("./artdatabanken.js");
-    const result = await getTaxonParents(267169);
-
-    expect(result).toEqual({ family: null, order: null });
-  });
-
-  it("returns nulls when there are no records", async () => {
-    const mockFetch = vi.fn().mockResolvedValue({
-      ok: true,
-      json: async () => ({ totalCount: 0, records: [] }),
-    });
-    vi.stubGlobal("fetch", mockFetch);
-
-    const { getTaxonParents } = await import("./artdatabanken.js");
-    const result = await getTaxonParents(267169);
-
-    expect(result).toEqual({ family: null, order: null });
-  });
-
-  it("throws on non-2xx so the backfill can log the root cause", async () => {
+  it("throws on non-2xx", async () => {
     const mockFetch = vi.fn().mockResolvedValue({ ok: false, status: 503 });
     vi.stubGlobal("fetch", mockFetch);
 
-    const { getTaxonParents } = await import("./artdatabanken.js");
-    await expect(getTaxonParents(267169)).rejects.toThrow(/HTTP 503/);
+    const { listAllBirdTaxonIds } = await import("./artdatabanken.js");
+    await expect(listAllBirdTaxonIds()).rejects.toThrow(/HTTP 503/);
+  });
+});
+
+describe("bulkResolveBirdTaxonomy()", () => {
+  beforeEach(() => {
+    vi.resetModules();
+    process.env.ARTDATABANKEN_API_KEY = "test-key";
+    resetPrismaMocks();
+  });
+  afterEach(() => {
+    vi.restoreAllMocks();
   });
 
-  it("treats empty-string vernacularName as null on the returned TaxonRef", async () => {
+  it("builds a scientificName-keyed map from bulk responses", async () => {
     const mockFetch = vi.fn().mockResolvedValue({
       ok: true,
       json: async () => ({
-        totalCount: 1,
+        totalCount: 3,
         records: [
           {
             taxon: {
-              id: 267169,
+              id: 103026,
               scientificName: "Parus major",
-              vernacularName: "talgoxe",
-              higherClassification: [
-                { taxonId: 6001111, scientificName: "Paridae", vernacularName: "", taxonRank: "Family" },
-                { taxonId: 6002222, scientificName: "Passeriformes", vernacularName: "", taxonRank: "Order" },
-              ],
+              family: "Paridae",
+              order: "Passeriformes",
+            },
+          },
+          {
+            taxon: {
+              id: 103025,
+              scientificName: "Cyanistes caeruleus",
+              family: "Paridae",
+              order: "Passeriformes",
+            },
+          },
+          {
+            taxon: {
+              id: 103027,
+              scientificName: "Sitta europaea",
+              family: "Sittidae",
+              order: "Passeriformes",
             },
           },
         ],
@@ -632,10 +552,101 @@ describe("getTaxonParents()", () => {
     });
     vi.stubGlobal("fetch", mockFetch);
 
-    const { getTaxonParents } = await import("./artdatabanken.js");
-    const result = await getTaxonParents(267169);
+    const { bulkResolveBirdTaxonomy } = await import("./artdatabanken.js");
+    const map = await bulkResolveBirdTaxonomy([103026, 103025, 103027]);
 
-    expect(result.family?.vernacularName).toBeNull();
-    expect(result.order?.vernacularName).toBeNull();
+    expect(map.size).toBe(3);
+    expect(map.get("Parus major")).toEqual({
+      taxonId: 103026,
+      scientificName: "Parus major",
+      family: "Paridae",
+      order: "Passeriformes",
+    });
+    expect(map.get("Sitta europaea")?.family).toBe("Sittidae");
+  });
+
+  it("does a single-id fallback pass for taxa missing from the bulk response", async () => {
+    const mockFetch = vi
+      .fn()
+      // Bulk chunk response covers 103026 but not 103027
+      .mockResolvedValueOnce({
+        ok: true,
+        json: async () => ({
+          totalCount: 1,
+          records: [
+            {
+              taxon: {
+                id: 103026,
+                scientificName: "Parus major",
+                family: "Paridae",
+                order: "Passeriformes",
+              },
+            },
+          ],
+        }),
+      })
+      // Single-id fallback for 103027
+      .mockResolvedValueOnce({
+        ok: true,
+        json: async () => ({
+          totalCount: 1,
+          records: [
+            {
+              taxon: {
+                id: 103027,
+                scientificName: "Sitta europaea",
+                family: "Sittidae",
+                order: "Passeriformes",
+              },
+            },
+          ],
+        }),
+      });
+    vi.stubGlobal("fetch", mockFetch);
+
+    const { bulkResolveBirdTaxonomy } = await import("./artdatabanken.js");
+    const map = await bulkResolveBirdTaxonomy([103026, 103027]);
+
+    expect(map.size).toBe(2);
+    expect(map.get("Sitta europaea")).toBeDefined();
+    expect(mockFetch).toHaveBeenCalledTimes(2);
+  });
+
+  it("treats empty-string family/order as null", async () => {
+    const mockFetch = vi.fn().mockResolvedValue({
+      ok: true,
+      json: async () => ({
+        totalCount: 1,
+        records: [
+          {
+            taxon: {
+              id: 99,
+              scientificName: "Taxon incertae",
+              family: "",
+              order: "",
+            },
+          },
+        ],
+      }),
+    });
+    vi.stubGlobal("fetch", mockFetch);
+
+    const { bulkResolveBirdTaxonomy } = await import("./artdatabanken.js");
+    const map = await bulkResolveBirdTaxonomy([99]);
+
+    expect(map.get("Taxon incertae")).toEqual({
+      taxonId: 99,
+      scientificName: "Taxon incertae",
+      family: null,
+      order: null,
+    });
+  });
+
+  it("throws on non-2xx from the bulk call", async () => {
+    const mockFetch = vi.fn().mockResolvedValue({ ok: false, status: 401 });
+    vi.stubGlobal("fetch", mockFetch);
+
+    const { bulkResolveBirdTaxonomy } = await import("./artdatabanken.js");
+    await expect(bulkResolveBirdTaxonomy([103026])).rejects.toThrow(/HTTP 401/);
   });
 });
