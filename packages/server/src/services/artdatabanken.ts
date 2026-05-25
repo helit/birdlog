@@ -562,105 +562,169 @@ export function calculateSpeciesRarity(
 
 // --- Taxonomy helpers ---
 //
-// Endpoint strategy (to be validated against live SOS API during Task 5 backfill):
-//   - findTaxonIdByScientificName: POST /Observations/Search with `taxon.scientificNames`
-//     filter; returns the first matching record's taxon.id.
-//   - getTaxonParents: POST /Observations/Search with `taxon.ids` + `output.fieldSet: "All"`;
-//     reads Family and Order entries from `taxon.higherClassification[]`.
-// If the live API does not expose `higherClassification`, switch to the Taxonomy service
-// endpoint (`/taxonservice/v1/taxa/{id}/parents`) and update these helpers.
+// SOS does not support filtering Observations/Search by scientificName — that filter
+// is silently ignored and the endpoint returns arbitrary records. What works:
+//   - TaxonAggregation with `taxon.ids: [BIRDS_TAXON_ID], includeUnderlyingTaxa: true`
+//     returns distinct taxonIds for every bird taxon observed in Sweden (no names).
+//   - Observations/Search with `taxon.ids: [chunk], fieldSet: "All"` returns records
+//     whose taxon object exposes family and order as plain scientific-name strings.
+// The pair below is the one-time backfill path: list all bird taxonIds, then bulk-resolve
+// (scientificName, family, order) tuples and collect them into a Map keyed by name.
 
-export interface TaxonRef {
+export interface BirdTaxonomyRecord {
   taxonId: number;
   scientificName: string;
-  vernacularName: string | null;
+  family: string | null;
+  order: string | null;
 }
 
-export interface TaxonParents {
-  family: TaxonRef | null;
-  order: TaxonRef | null;
-}
-
-interface HigherClassificationEntry {
-  taxonId: number;
-  scientificName: string;
-  vernacularName?: string;
-  taxonRank: string;
-}
-
-function toTaxonRef(entry: HigherClassificationEntry): TaxonRef {
-  const vn = entry.vernacularName;
-  return {
-    taxonId: entry.taxonId,
-    scientificName: entry.scientificName,
-    vernacularName: vn && vn.length > 0 ? vn : null,
-  };
-}
-
-export async function findTaxonIdByScientificName(
-  scientificName: string,
-): Promise<number | null> {
+export async function listAllBirdTaxonIds(): Promise<number[]> {
+  // SOS TaxonAggregation caps skip+take at 1000 but returns every record when
+  // skip/take are omitted — the API doc's "set to null to retrieve all" path.
   const res = await fetch(
-    `${SOS_BASE_URL}/Observations/Search?skip=0&take=1`,
+    `${SOS_BASE_URL}/Observations/TaxonAggregation`,
     {
       method: "POST",
       headers: {
         "Content-Type": "application/json",
         "Ocp-Apim-Subscription-Key": getApiKey(),
       },
-      signal: AbortSignal.timeout(5000),
+      signal: AbortSignal.timeout(30000),
       body: JSON.stringify({
-        taxon: { scientificNames: [scientificName] },
-        output: { fieldSet: "Minimum" },
+        taxon: { ids: [BIRDS_TAXON_ID], includeUnderlyingTaxa: true },
       }),
     },
   );
-
   if (!res.ok) {
     throw new Error(
-      `Artdatabanken findTaxonIdByScientificName failed: HTTP ${res.status} for "${scientificName}"`,
-    );
-  }
-  const data: ObservationSearchResponse = await res.json();
-  if (data.records.length === 0) return null;
-  return data.records[0].taxon.id;
-}
-
-export async function getTaxonParents(taxonId: number): Promise<TaxonParents> {
-  const empty: TaxonParents = { family: null, order: null };
-
-  const res = await fetch(
-    `${SOS_BASE_URL}/Observations/Search?skip=0&take=1`,
-    {
-      method: "POST",
-      headers: {
-        "Content-Type": "application/json",
-        "Ocp-Apim-Subscription-Key": getApiKey(),
-      },
-      signal: AbortSignal.timeout(5000),
-      body: JSON.stringify({
-        taxon: { ids: [taxonId] },
-        output: { fieldSet: "All" },
-      }),
-    },
-  );
-
-  if (!res.ok) {
-    throw new Error(
-      `Artdatabanken getTaxonParents failed: HTTP ${res.status} for taxonId=${taxonId}`,
+      `Artdatabanken listAllBirdTaxonIds failed: HTTP ${res.status}`,
     );
   }
   const data = (await res.json()) as {
-    records?: Array<{ taxon?: { higherClassification?: HigherClassificationEntry[] } }>;
+    records?: Array<{ taxonId?: number }>;
   };
-  const higher = data.records?.[0]?.taxon?.higherClassification;
-  if (!higher || !Array.isArray(higher)) return empty;
+  const ids: number[] = [];
+  for (const r of data.records ?? []) {
+    if (typeof r.taxonId === "number") ids.push(r.taxonId);
+  }
+  return ids;
+}
 
-  const familyEntry = higher.find((e) => e.taxonRank === "Family");
-  const orderEntry = higher.find((e) => e.taxonRank === "Order");
-
-  return {
-    family: familyEntry ? toTaxonRef(familyEntry) : null,
-    order: orderEntry ? toTaxonRef(orderEntry) : null,
+async function fetchTaxonomyBatch(
+  ids: number[],
+  take: number,
+): Promise<BirdTaxonomyRecord[]> {
+  const MAX_ATTEMPTS = 5;
+  const BASE_DELAY_MS = 2000;
+  const TIMEOUT_MS = 30000;
+  let attempt = 0;
+  let res: Response | null = null;
+  for (;;) {
+    try {
+      res = await fetch(
+        `${SOS_BASE_URL}/Observations/Search?skip=0&take=${take}`,
+        {
+          method: "POST",
+          headers: {
+            "Content-Type": "application/json",
+            "Ocp-Apim-Subscription-Key": getApiKey(),
+          },
+          signal: AbortSignal.timeout(TIMEOUT_MS),
+          body: JSON.stringify({
+            taxon: { ids, includeUnderlyingTaxa: false },
+            output: { fieldSet: "All" },
+          }),
+        },
+      );
+      if (res.status !== 429) break;
+    } catch (err) {
+      if (attempt >= MAX_ATTEMPTS - 1) throw err;
+    }
+    if (attempt >= MAX_ATTEMPTS - 1) break;
+    const delay = BASE_DELAY_MS * 2 ** attempt + Math.random() * 500;
+    await new Promise((r) => setTimeout(r, delay));
+    attempt++;
+  }
+  if (!res || !res.ok) {
+    throw new Error(
+      `Artdatabanken fetchTaxonomyBatch failed: HTTP ${res?.status ?? "network"} for ${ids.length} ids`,
+    );
+  }
+  const data = (await res.json()) as {
+    records?: Array<{
+      taxon?: {
+        id?: number;
+        scientificName?: string;
+        family?: string | null;
+        order?: string | null;
+      };
+    }>;
   };
+  const seen = new Set<number>();
+  const out: BirdTaxonomyRecord[] = [];
+  for (const rec of data.records ?? []) {
+    const t = rec.taxon;
+    if (!t || typeof t.id !== "number" || typeof t.scientificName !== "string") continue;
+    if (seen.has(t.id)) continue;
+    seen.add(t.id);
+    out.push({
+      taxonId: t.id,
+      scientificName: t.scientificName,
+      family: typeof t.family === "string" && t.family.length > 0 ? t.family : null,
+      order: typeof t.order === "string" && t.order.length > 0 ? t.order : null,
+    });
+  }
+  return out;
+}
+
+export async function bulkResolveBirdTaxonomy(
+  taxonIds: number[],
+  options: {
+    onProgress?: (done: number, total: number) => void;
+    onFallbackStart?: (missing: number) => void;
+  } = {},
+): Promise<Map<string, BirdTaxonomyRecord>> {
+  const CHUNK_SIZE = 50;
+  const PAGE_SIZE = 1000;
+  const BULK_PAUSE_MS = 300;
+  const FALLBACK_PAUSE_MS = 1000;
+
+  const byName = new Map<string, BirdTaxonomyRecord>();
+  const seenIds = new Set<number>();
+
+  for (let i = 0; i < taxonIds.length; i += CHUNK_SIZE) {
+    const chunk = taxonIds.slice(i, i + CHUNK_SIZE);
+    const records = await fetchTaxonomyBatch(chunk, PAGE_SIZE);
+    for (const r of records) {
+      seenIds.add(r.taxonId);
+      if (!byName.has(r.scientificName)) byName.set(r.scientificName, r);
+    }
+    options.onProgress?.(
+      Math.min(i + CHUNK_SIZE, taxonIds.length),
+      taxonIds.length,
+    );
+    if (i + CHUNK_SIZE < taxonIds.length) {
+      await new Promise((r) => setTimeout(r, BULK_PAUSE_MS));
+    }
+  }
+
+  const missing = taxonIds.filter((id) => !seenIds.has(id));
+  options.onFallbackStart?.(missing.length);
+  for (const id of missing) {
+    try {
+      const records = await fetchTaxonomyBatch([id], 1);
+      for (const r of records) {
+        seenIds.add(r.taxonId);
+        if (!byName.has(r.scientificName)) byName.set(r.scientificName, r);
+      }
+    } catch (err) {
+      console.warn(
+        `[bulkResolveBirdTaxonomy] skipping taxonId=${id}:`,
+        err instanceof Error ? err.message : err,
+      );
+    }
+    await new Promise((r) => setTimeout(r, FALLBACK_PAUSE_MS));
+  }
+
+  return byName;
 }

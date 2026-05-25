@@ -1,5 +1,4 @@
 import { scientificToSlug } from "../utils/slug.js";
-import type { TaxonParents } from "../services/artdatabanken.js";
 
 export interface StaticFallback {
   orders: Record<string, { sv: string }>;
@@ -12,28 +11,24 @@ export interface TaxonomyPayload {
   order: string | null;
 }
 
-export interface TaxonomyDeps {
-  findTaxonId: (scientificName: string) => Promise<number | null>;
-  getParents: (taxonId: number) => Promise<TaxonParents>;
-  fallback: StaticFallback;
+export interface TaxonomyEntry {
+  family: string | null;
+  order: string | null;
 }
 
-export async function resolveSpeciesTaxonomy(
-  scientificName: string,
-  deps: TaxonomyDeps,
-): Promise<TaxonomyPayload | null> {
-  const taxonId = await deps.findTaxonId(scientificName);
-  if (taxonId === null) return null;
+export function resolveSpeciesTaxonomy(
+  entry: TaxonomyEntry | undefined,
+  fallback: StaticFallback,
+): TaxonomyPayload | null {
+  if (!entry) return null;
 
-  const parents = await deps.getParents(taxonId);
+  const familyScientific = entry.family;
+  const orderScientific = entry.order;
 
-  const familyScientific = parents.family?.scientificName ?? null;
-  const orderScientific = parents.order?.scientificName ?? null;
-
-  let order = parents.order?.vernacularName ?? null;
-  if (order === null && orderScientific !== null) {
+  let order: string | null = null;
+  if (orderScientific !== null) {
     const slug = scientificToSlug(orderScientific);
-    order = deps.fallback.orders[slug]?.sv ?? null;
+    order = fallback.orders[slug]?.sv ?? null;
   }
 
   return { familyScientific, orderScientific, order };
@@ -45,7 +40,9 @@ export interface ProcessSpeciesResult {
   resolved: boolean;
 }
 
-export interface ProcessSpeciesDeps extends TaxonomyDeps {
+export interface ProcessSpeciesDeps {
+  lookup: (scientificName: string) => TaxonomyEntry | undefined;
+  fallback: StaticFallback;
   updateSpecies: (id: string, payload: TaxonomyPayload) => Promise<void>;
   logger?: {
     warn: (msg: string) => void;
@@ -63,9 +60,12 @@ export async function processSpeciesBackfill(
   };
 
   try {
-    const payload = await resolveSpeciesTaxonomy(species.scientificName, deps);
+    const entry = deps.lookup(species.scientificName);
+    const payload = resolveSpeciesTaxonomy(entry, deps.fallback);
     if (payload === null) {
-      logger.warn(`[backfill] no taxonId found for ${species.scientificName} — skipping`);
+      logger.warn(
+        `[backfill] no taxonomy entry for ${species.scientificName} — skipping`,
+      );
       return { id: species.id, order: null, resolved: false };
     }
     await deps.updateSpecies(species.id, payload);

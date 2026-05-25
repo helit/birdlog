@@ -11,25 +11,15 @@ const mockFallback = {
 };
 
 describe("resolveSpeciesTaxonomy", () => {
-  it("returns null when the species has no taxonId in Artdatabanken", async () => {
-    const result = await resolveSpeciesTaxonomy("Fakus nonexistens", {
-      findTaxonId: vi.fn().mockResolvedValue(null),
-      getParents: vi.fn(),
-      fallback: mockFallback,
-    });
-    expect(result).toBeNull();
+  it("returns null when the entry is undefined (not found in the lookup map)", () => {
+    expect(resolveSpeciesTaxonomy(undefined, mockFallback)).toBeNull();
   });
 
-  it("returns the payload from Artdatabanken when vernacular is present", async () => {
-    const result = await resolveSpeciesTaxonomy("Parus major", {
-      findTaxonId: vi.fn().mockResolvedValue(267169),
-      getParents: vi.fn().mockResolvedValue({
-        family: { taxonId: 1, scientificName: "Paridae", vernacularName: "Mesar" },
-        order: { taxonId: 2, scientificName: "Passeriformes", vernacularName: "Tättingar" },
-      }),
-      fallback: mockFallback,
-    });
-
+  it("maps family and order scientific names into the payload", () => {
+    const result = resolveSpeciesTaxonomy(
+      { family: "Paridae", order: "Passeriformes" },
+      mockFallback,
+    );
     expect(result).toEqual({
       familyScientific: "Paridae",
       orderScientific: "Passeriformes",
@@ -37,33 +27,19 @@ describe("resolveSpeciesTaxonomy", () => {
     });
   });
 
-  it("falls back to static JSON when Artdatabanken has no Swedish order name", async () => {
-    const result = await resolveSpeciesTaxonomy("Parus major", {
-      findTaxonId: vi.fn().mockResolvedValue(267169),
-      getParents: vi.fn().mockResolvedValue({
-        family: { taxonId: 1, scientificName: "Paridae", vernacularName: null },
-        order: { taxonId: 2, scientificName: "Passeriformes", vernacularName: null },
-      }),
-      fallback: mockFallback,
-    });
-
-    expect(result).toEqual({
-      familyScientific: "Paridae",
-      orderScientific: "Passeriformes",
-      order: "Tättingar",
-    });
+  it("applies the static fallback for the Swedish order name", () => {
+    const result = resolveSpeciesTaxonomy(
+      { family: "Paridae", order: "Passeriformes" },
+      { orders: { passeriformes: { sv: "Tättingar" } }, families: {} },
+    );
+    expect(result?.order).toBe("Tättingar");
   });
 
-  it("leaves order null when neither Artdatabanken nor fallback has a Swedish name", async () => {
-    const result = await resolveSpeciesTaxonomy("Parus major", {
-      findTaxonId: vi.fn().mockResolvedValue(267169),
-      getParents: vi.fn().mockResolvedValue({
-        family: { taxonId: 1, scientificName: "Unknownidae", vernacularName: null },
-        order: { taxonId: 2, scientificName: "Unknowniformes", vernacularName: null },
-      }),
-      fallback: mockFallback,
-    });
-
+  it("leaves order null when the scientific order is absent from the fallback", () => {
+    const result = resolveSpeciesTaxonomy(
+      { family: "Unknownidae", order: "Unknowniformes" },
+      mockFallback,
+    );
     expect(result).toEqual({
       familyScientific: "Unknownidae",
       orderScientific: "Unknowniformes",
@@ -71,13 +47,11 @@ describe("resolveSpeciesTaxonomy", () => {
     });
   });
 
-  it("returns null family/order scientific names when parents are missing", async () => {
-    const result = await resolveSpeciesTaxonomy("Parus major", {
-      findTaxonId: vi.fn().mockResolvedValue(267169),
-      getParents: vi.fn().mockResolvedValue({ family: null, order: null }),
-      fallback: mockFallback,
-    });
-
+  it("returns null-valued scientific names when the entry has them", () => {
+    const result = resolveSpeciesTaxonomy(
+      { family: null, order: null },
+      mockFallback,
+    );
     expect(result).toEqual({
       familyScientific: null,
       orderScientific: null,
@@ -85,16 +59,11 @@ describe("resolveSpeciesTaxonomy", () => {
     });
   });
 
-  it("matches fallback keys case-insensitively via scientific-name slug", async () => {
-    const result = await resolveSpeciesTaxonomy("Parus major", {
-      findTaxonId: vi.fn().mockResolvedValue(267169),
-      getParents: vi.fn().mockResolvedValue({
-        family: { taxonId: 1, scientificName: "PARIDAE", vernacularName: null },
-        order: { taxonId: 2, scientificName: "PASSERIFORMES", vernacularName: null },
-      }),
-      fallback: mockFallback,
-    });
-
+  it("matches fallback keys case-insensitively via the scientific-name slug", () => {
+    const result = resolveSpeciesTaxonomy(
+      { family: "PARIDAE", order: "PASSERIFORMES" },
+      mockFallback,
+    );
     expect(result?.order).toBe("Tättingar");
   });
 });
@@ -107,11 +76,7 @@ describe("processSpeciesBackfill", () => {
     const result = await processSpeciesBackfill(
       { id: "a", scientificName: "Parus major" },
       {
-        findTaxonId: vi.fn().mockResolvedValue(267169),
-        getParents: vi.fn().mockResolvedValue({
-          family: { taxonId: 1, scientificName: "Paridae", vernacularName: "Mesar" },
-          order: { taxonId: 2, scientificName: "Passeriformes", vernacularName: "Tättingar" },
-        }),
+        lookup: () => ({ family: "Paridae", order: "Passeriformes" }),
         fallback: mockFallback,
         updateSpecies,
         logger: silentLogger,
@@ -126,13 +91,12 @@ describe("processSpeciesBackfill", () => {
     expect(result).toEqual({ id: "a", order: "Tättingar", resolved: true });
   });
 
-  it("returns { resolved: false } without calling updateSpecies when taxonId not found", async () => {
+  it("returns { resolved: false } without calling updateSpecies when the lookup misses", async () => {
     const updateSpecies = vi.fn();
     const result = await processSpeciesBackfill(
       { id: "a", scientificName: "Fakus nonexistens" },
       {
-        findTaxonId: vi.fn().mockResolvedValue(null),
-        getParents: vi.fn(),
+        lookup: () => undefined,
         fallback: mockFallback,
         updateSpecies,
         logger: silentLogger,
@@ -143,33 +107,12 @@ describe("processSpeciesBackfill", () => {
     expect(result).toEqual({ id: "a", order: null, resolved: false });
   });
 
-  it("catches errors from the Artdatabanken calls and logs them instead of rejecting", async () => {
+  it("catches errors from updateSpecies and logs them instead of rejecting", async () => {
     const logger = { warn: vi.fn(), error: vi.fn() };
     const result = await processSpeciesBackfill(
       { id: "a", scientificName: "Parus major" },
       {
-        findTaxonId: vi.fn().mockRejectedValue(new Error("rate limited")),
-        getParents: vi.fn(),
-        fallback: mockFallback,
-        updateSpecies: vi.fn(),
-        logger,
-      },
-    );
-
-    expect(result).toEqual({ id: "a", order: null, resolved: false });
-    expect(logger.error).toHaveBeenCalledTimes(1);
-  });
-
-  it("catches errors from updateSpecies itself", async () => {
-    const logger = { warn: vi.fn(), error: vi.fn() };
-    const result = await processSpeciesBackfill(
-      { id: "a", scientificName: "Parus major" },
-      {
-        findTaxonId: vi.fn().mockResolvedValue(267169),
-        getParents: vi.fn().mockResolvedValue({
-          family: { taxonId: 1, scientificName: "Paridae", vernacularName: "Mesar" },
-          order: { taxonId: 2, scientificName: "Passeriformes", vernacularName: "Tättingar" },
-        }),
+        lookup: () => ({ family: "Paridae", order: "Passeriformes" }),
         fallback: mockFallback,
         updateSpecies: vi.fn().mockRejectedValue(new Error("DB down")),
         logger,
