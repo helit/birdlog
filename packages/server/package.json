@@ -12,7 +12,7 @@
     "db:migrate": "prisma migrate dev",
     "db:seed": "tsx prisma/seed.ts",
     "db:studio": "prisma studio",
-    "backfill:taxonomy": "tsx --env-file=.env prisma/backfill-taxonomy.ts"
+    "backfill:taxonomy": "tsx prisma/backfill-taxonomy.ts"
   },
   "dependencies": {
     "@apollo/server": "^4.11.0",
@@ -37,6 +37,7 @@
     "@types/jsonwebtoken": "^9.0.10",
     "@types/morgan": "^1.9.10",
     "@types/node": "^22.0.0",
+    "dotenv": "^16.4.5",
     "prisma": "^6.2.0",
     "tsx": "^4.19.0",
     "typescript": "^5.6.0"
