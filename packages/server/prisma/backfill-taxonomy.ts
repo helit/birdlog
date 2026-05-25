@@ -1,3 +1,6 @@
+// Load .env from cwd when present (local runs); no-ops inside the prod
+// container where env vars come from Docker's env_file.
+import "dotenv/config";
 import { PrismaClient } from "@prisma/client";
 import {
   listAllBirdTaxonIds,
