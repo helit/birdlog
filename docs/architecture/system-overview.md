@@ -77,4 +77,6 @@ Browser → React SPA → Apollo Client (GraphQL) → Express/Apollo Server → 
 - Host: TrueNAS SCALE at `192.168.0.10`
 - Path: `/var/www/birdlog`
 - SSL: wildcard cert via Nginx Proxy Manager
-- Auto-deploy: cron polling for new commits every 5 min
+- Manual deploy: `ssh henrik@192.168.0.10`, then `cd /var/www/birdlog && ./scripts/deploy.sh`
+  (script fetches `main`, rebuilds the app image, recreates the container; migrations
+  apply themselves on container start)

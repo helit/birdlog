@@ -31,5 +31,5 @@ Each phase runs fresh. Manual checkpoint between every phase. See `docs/guides/a
 - Host: TrueNAS SCALE, static IP `192.168.0.10`, user `henrik`
 - Path: `/var/www/birdlog`
 - SSH: password-based (no key auth — TrueNAS home dir restrictions)
-- Auto-deploy: cron checks for new commits every 5 min
+- Manual deploy: SSH to host, `cd /var/www/birdlog && ./scripts/deploy.sh`
 - SSL: wildcard cert via Nginx Proxy Manager
