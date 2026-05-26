@@ -11,7 +11,7 @@ No task is complete without fresh evidence. This skill enforces a hard gate befo
 ## When I Activate
 
 - ✅ Before claiming a task is "done" or "complete"
-- ✅ Before marking a spec task as `[x]`
+- ✅ Before marking a plan sub-task as `[x]`
 - ✅ Before moving from Phase 3 → Phase 4
 - ✅ Before moving from Phase 4 → Phase 5
 - ✅ Before creating a PR
@@ -42,6 +42,7 @@ Execute these steps in order. Do not skip any step. Do not claim completion unti
 ### Step 1: IDENTIFY
 
 State the exact command(s) you will run to verify completion. Read them from `CLAUDE.md` or the project's test/lint config. Example:
+
 ```
 Test command: npm test
 Lint command: npm run lint
@@ -54,6 +55,7 @@ Execute the commands now, in this response. Do not read cached output. Do not as
 ### Step 3: READ
 
 Read the full output carefully:
+
 - Total tests: X passed, Y failed
 - Lint errors: 0 errors, Z warnings
 - Exit code: 0 or non-zero
@@ -61,6 +63,7 @@ Read the full output carefully:
 ### Step 4: VERIFY
 
 Confirm the output meets the completion standard:
+
 - ✅ 0 test failures
 - ✅ 0 lint errors
 - ✅ Exit code 0
@@ -72,6 +75,7 @@ If any condition is not met, this task is **not complete**. Fix the issues and r
 Only after Step 4 passes: state completion and include the evidence inline.
 
 Example format:
+
 ```
 ✅ Verification passed
   Tests:  47 passed, 0 failed (npm test, exit 0)
@@ -83,10 +87,12 @@ Example format:
 ## What Counts as Evidence
 
 **Valid:**
+
 - Actual stdout from running the test command in this response
 - Actual stdout from running the lint command in this response
 
 **Not valid:**
+
 - "Tests passed last time I ran them"
 - "I can see the implementation is correct"
 - Partial output (e.g., only showing passing tests, not the summary line)

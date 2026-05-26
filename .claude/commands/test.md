@@ -6,7 +6,7 @@
 Skill({skill: "test"})
 ```
 
-Runs full test suite + linter. Hard gate: zero failures required.
+Runs the full test suite and linter on the task's branch. Hard gate: zero failures, zero lint errors.
 
-**Prerequisite:** Phase 3 complete.
+**Prerequisite:** Phase 3 (Implement) complete.
 **Next:** `/clear`, then `/review <N>`

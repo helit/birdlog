@@ -1,120 +1,50 @@
 # BIRDLOG — Claude Instructions
 
-## Project
-
 Mobile-first Swedish birdwatching field companion. Helps birders identify nearby birds, log sightings, and understand species rarity and migration context. All user-facing text is in Swedish. Uses geolocation and the Artdatabanken species observation API to compute real-time rarity context.
 
-**Uses Spec-Driven Development (SDD).** Every feature starts with an approved spec. No code without a spec.
+Uses a 3-stage AI workflow: **Discover → Plan Epics → Build Features**. Full playbook: `docs/guides/ai-workflow.md`. The available skill list is injected at session start — check for a matching skill before any development action.
 
 ---
 
-## Key Files
+## Session rules
 
-- `docs/architecture/system-overview.md` — read before structural changes
-- `docs/specs/` — one approved spec per feature
-- `docs/customer/` — domain knowledge, glossary, compliance
-- `docs/guides/ai-workflow.md` — team workflow playbook
-- `GLOSSARY.md` — domain terms (canonical; appended by `/pitch` only)
-
----
-
-## Tech Stack
-
-**Language:** TypeScript (strict mode, both client and server)
-**Frontend:** React 18 + Vite 6 + TailwindCSS 4 + Apollo Client (GraphQL) + react-router-dom v7 + shadcn/ui components
-**Backend:** Node.js + Express + Apollo Server 4 (GraphQL) + Prisma 6 ORM
-**Database:** PostgreSQL (Prisma migrations in `packages/server/prisma/`)
-**Test runner:** Vitest (unit/integration), Playwright (E2E)
-**Build:** `npm run build`
-**Test:** `npm run test --workspace=packages/client` / `npm run test --workspace=packages/server` / `npm run test:e2e`
-**Lint:** `npm run lint`
-**Typecheck:** `npm run typecheck`
+- No production code without an approved plan (Phase 2b `Approved ✅` on the task issue).
+- One sub-task at a time.
+- `/clear` between phases — cross-phase state lives on the task issue, not in chat.
+- Critical review findings → `/revise <N>` (Phase 5b). Never fix Criticals inline in `/review`.
+- Human review feedback on an open task issue → write what you want as a plain-English comment on the issue, then run `/revise <N>`. The skill synthesizes the structured findings for you (Critical by default; demote with `nit:`/`minor:`/`non-blocking:` prefixes).
+- Living docs (`docs/ARCHITECTURE.md`, `docs/GLOSSARY.md`, `docs/PRD.md`) are edited surgically by post-branch phase skills (`/implement`, `/review`, `/revise`, `/commit`) and committed on the feature branch as part of that phase. Pre-branch phases (`/define`, `/plan`) only *record planned updates* in their TL;DR — they must not touch the docs, since any commit would land on `main`.
+- User-facing strings are always in Swedish.
+- Field guide, not a fitness tracker — no streaks, no gamification, no engagement hooks.
 
 ---
 
-## Skills
+## Per-project config
 
-Check for a matching skill before every development action. Use the `Skill` tool.
+Single source of truth for every skill. Skills read these by name.
 
-| Command | When |
-|---|---|
-| `/initiate-project` | Once per engagement — scaffold + configure |
-| `/define` | New feature — Phase 1 |
-| `/spec <N>` | Phase 2 — after `/define` |
-| `/implement <N>` | Phase 3 — after `/spec` |
-| `/test <N>` | Phase 4 — after `/implement` |
-| `/review <N>` | Phase 5 — after `/test` |
-| `/commit <N>` | Phase 6 — after `/review` |
-| `fix-bug` | Any bug or unexpected behavior |
-| `test-driven-development` | Writing any code |
-| `verification-before-completion` | Before claiming done |
-| `git-commit-helper` | Before `git commit` |
-
-Run `/clear` between phases. State stored in the issue tracker (see Version Control section).
+- **Platform:** GitHub — `gh issue` / `gh pr` for issue + PR CLI.
+- **Task PR strategy:** `trunk` — task branch → `main` directly (partial work behind feature flags if needed; no long-running epic branches).
+- **Test command:** `npm run test --workspace=packages/server` (server) / `npm run test --workspace=packages/client` (client) / `npm run test:e2e` (E2E)
+- **Lint command:** `npm run lint`
+- **Build command:** `npm run build`
+- **Typecheck command:** `npm run typecheck`
+- **Deploy command:** `./scripts/deploy.sh` on the TrueNAS host (see `docs/runbooks/deploy.md`)
+- **Tech stack detail:** see `docs/ARCHITECTURE.md`.
 
 ---
 
-## Rules
+## Hard don'ts
 
-1. Read the spec before writing code.
-2. One task at a time — never a full feature in one pass.
-3. Failing test before implementation (TDD).
-4. Do not modify specs — flag issues for human review.
-5. Do not skip review — dispatch the `code-reviewer` agent.
-6. Fresh test + lint required before any "done" claim.
-
----
-
-## Guards
-
-- Skip the spec for small features → **No.**
-- Write tests after (they "take too long") → **No.**
-- Last test run passed, skip re-run → **No.**
-- Fix bug + improve surrounding code → **No.** Fix only.
-- Know root cause, skip failing test → **No.**
-- Spec says X, but Y is better → **Flag it.** Don't change the spec.
+- Commit secrets or `.env` files.
+- Force-push to `main` or commit directly to `main`.
+- Modify a plan silently — re-run `/plan <N>` instead.
+- Add gamification, streaks, or engagement hooks.
+- Ship user-facing English copy — everything in the UI must be Swedish.
 
 ---
 
-## Code Style
-
-- TypeScript strict — no `any`, no implicit returns, explicit types at boundaries
-- Named exports only — no default exports
-- Async/await over `.then()` chains
-- React components in `packages/client/src/components/` — PascalCase filenames
-- GraphQL resolvers in `packages/server/src/resolvers/`
-- Follow existing patterns — no new abstractions without reason
-- Prefer explicit over clever; functions small and single-purpose
-- User-facing strings always in Swedish
-
----
-
-## Git
-
-- Branch: `feat/<spec-slug>` from `main`
-- Conventional Commits — use `git-commit-helper`
-- PRs link to the spec; never force-push or commit directly to `main`
-
-## Version Control
-
-- **Platform:** GitHub
-- **Issue CLI:** `gh issue`
-- **PR CLI:** `gh pr create`
-
----
-
-## Do Not
-
-- Write code without an approved spec
-- Implement multiple tasks in one step
-- Create files not required by the spec
-- Add abstractions, error handling, or features not in the spec
-- Commit secrets or `.env` files
-- Add gamification, streaks, or engagement hooks (field guide, not fitness tracker)
-
----
-
-## Customer Context
+## Customer context
 
 Solo developer building a personal Swedish birdwatching app. Domain: ornithology in Sweden. Key external dependency: Artdatabanken species observation API for rarity data. Users are Swedish birders.
 

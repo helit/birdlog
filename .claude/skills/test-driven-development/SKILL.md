@@ -1,6 +1,6 @@
 ---
 name: test-driven-development
-description: Use when implementing any task from a spec, writing new functionality, or fixing a bug. Enforces the Red → Green → Refactor cycle. Iron law: no production code without a failing test first.
+description: Use when implementing any task from a plan, writing new functionality, or fixing a bug. Enforces the Red → Green → Refactor cycle. Iron law: no production code without a failing test first.
 allowed-tools: Bash, Read, Write, Edit
 ---
 
@@ -10,7 +10,7 @@ The iron law: **no production code without a failing test first.**
 
 ## When I Activate
 
-- ✅ Starting any task from a spec's Implementation Plan
+- ✅ Starting any sub-task from a Plan TL;DR
 - ✅ Fixing a bug (via the `fix-bug` skill)
 - ✅ Writing any new function, class, module, or component
 - ✅ Whenever the user says "implement", "add", "create", or "build" something
@@ -34,7 +34,7 @@ Repeat this cycle for every unit of work.
 
 ### Red Phase — Write a Failing Test
 
-1. Read the task's acceptance condition from the spec.
+1. Read the sub-task's acceptance condition from the Plan TL;DR.
 2. Write a test that verifies that condition — from the caller's perspective, not the implementation's.
 3. Run the test. **Confirm it fails.**
 4. Read the failure message. Confirm it fails for the right reason:
@@ -65,6 +65,7 @@ Repeat this cycle for every unit of work.
 ## Test Quality Standards
 
 A good test:
+
 - Tests one thing (single assertion or tightly related group)
 - Names the scenario clearly: `should return 404 when user is not found`
 - Is independent of other tests (no shared mutable state)

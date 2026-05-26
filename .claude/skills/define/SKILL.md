@@ -1,187 +1,211 @@
 ---
 name: define
-description: Use when starting a new feature. Phase 1 of the SDD workflow — runs a rigorous dialogue loop to reach shared, unambiguous understanding, then creates an issue tracker card as the feature's Kanban card and cross-session state store.
+description: Phase 1 of the Stage 3 feature workflow — epic-scoped task entry. Takes an epic issue number, picks the next task to start, classifies size (small/medium/large), and creates a child task issue linked to the epic. Deep Socratic work moves to /plan (task-level) or /define-prd (product-level); /define is now a lean, fast entry point.
 allowed-tools: Read, Bash, Glob, Grep, Agent
 ---
 
-# Define Skill — Phase 1 of 6
+# Define Skill — Phase 1 of 6 (Stage 3)
 
-You are running **Phase 1: Define** of the Spec-Driven Development workflow.
+You are running **Phase 1: Define** of the Stage 3 feature workflow. Unlike the old workflow, Define is now epic-scoped and lightweight — its only job is to pick the next task from an epic, size it, and create the child issue. The heavy thinking moved elsewhere: product scope lives in `/define-prd`, and task-level decisions happen in `/plan`.
 
 ## Fresh Context Check
 
-This phase is designed to run in a fresh context. If you have prior conversation history in this session unrelated to this phase, ask the user to run `/clear` and then re-run `/define`.
+This phase is designed to run in a fresh context. If prior conversation history is unrelated, ask the user to run `/clear` and then re-run `/define <epic#>`.
+
+## Core Principle
+
+Fast, focused, one exchange if possible. Read the epic, propose the next task with a size guess, confirm with the user, create the child issue. No Socratic grilling here — that's `/plan`.
 
 ## Anti-Rationalization Guards
 
-- "I understand enough, let's move on" → No. Exit only when the user explicitly signals satisfaction.
-- "The user said 'ok' — that's good enough" → No. Ambiguous short affirmatives require explicit confirmation. Ask: *"Are you satisfied with the current understanding and ready to move to Phase 2?"*
-- "I'll note the open question and proceed" → No. Unresolved questions block the phase. Resolve them or explicitly park them with the user's agreement.
+- "I should probe the task deeply before creating the issue" → No. `/plan` does the deep work. Keep `/define` to: pick task, size it, create issue.
+- "The epic is vague, I'll re-interview the user on scope" → No. If the epic is too vague, tell the user to re-run `/plan-epics` to tighten it. Don't re-derive scope here.
+- "Let me create the issue even though the user hasn't confirmed the task" → No. User confirms the task title and size before the issue gets created.
+- "I'll mark this task as started in the epic body at the same time" → Yes, actually — but only after the child issue is created and has an ID.
 
 ---
 
-## Step 0 — Check Project is Initialized
+## Step 0 — Prerequisites
 
-Before doing anything else, verify the project has been scaffolded:
+Verify the epic exists and is open:
 
 ```bash
-ls -la
+gh issue view <epic#> --json number,title,body,state,labels
 ```
 
-Check for the presence of `package.json`, `pyproject.toml`, `Cargo.toml`, `go.mod`, `src/`, or `app/`. If none are found, **stop immediately** and tell the user:
-
-> "No project structure detected. Run `/initiate-project` first to choose your tech stack and scaffold the project, then come back to `/define` to start your first feature."
-
----
-
-## Step 1 — Gather Context
-
-Ask the user for:
-1. The feature name or description
-2. The PRD file path (optional — check `docs/prd/` if not provided)
-
-Then read all of the following before asking any questions:
-- The PRD from `docs/prd/` if one exists
-- `docs/customer/domain-glossary.md` — understand the customer's terminology
-- `docs/customer/integrations.md` — understand the external systems involved
-- `docs/customer/compliance.md` — note any regulatory constraints
-- `docs/architecture/system-overview.md` — understand the current system design
+- If `state` is CLOSED, stop and tell the user the epic is already done. Ask if they meant a different epic.
+- If the issue has no `epic` label, warn the user — this may not be an epic — and ask them to confirm before proceeding.
+- If `docs/PRD.md` is still a stub (contains `_Run /define-prd to populate_`), stop and tell the user to run `/define-prd` then `/plan-epics` first.
 
 ---
 
-## Step 2 — Dialogue Loop
+## Step 1 — Read the Epic and Its Existing Children
 
-After completing the reads, identify all ambiguities and unknowns across: scope, constraints, integrations, success metrics, and non-goals. Then enter the dialogue loop:
+```bash
+gh issue view <epic#> --json number,title,body,comments
+gh issue list --search "\"Part of: #<epic#>\"" --state all --json number,title,state,body
+```
 
-- Ask questions in rounds of ≤7, grouped by topic. Provide multiple-choice options where the answer space is bounded (yes/no, enumerated choices). Reserve open-ended questions for genuinely open-ended concerns.
-- After each response: process the answers, update your understanding, identify which gaps remain, and identify any new gaps surfaced by the answers.
-- When following up on a prior answer, state explicitly which answer triggered the new question: *"Your answer about X surfaces a question about Y."*
-- **Continue the loop until the user explicitly signals satisfaction.** Acceptable signals: "I'm satisfied", "proceed", "that covers it", "looks good", "move on", or equivalent. Do not self-terminate the loop by declaring you understand enough.
+Extract from the epic:
 
----
+- Goal / acceptance criteria
+- Scope bullets
+- Existing child tasks (already created, open or closed)
+- Dependencies on other epics
 
-## Step 3 — Understanding Summary
-
-After the loop exits, present a summary of your understanding in 5–8 bullet points covering:
-- Scope (what IS being built)
-- Key constraints
-- Non-goals (what is explicitly excluded)
-- Success metrics
-- Open risks
-
-Ask for one final confirmation: *"Does this summary accurately capture what we're building? Confirm to proceed to Phase 2."*
-
-**Hard gate:** Do not proceed past this step until the user explicitly confirms the summary is correct.
+Note which acceptance criteria are already satisfied by closed children, and which remain.
 
 ---
 
-## Step 4 — Create Issue
+## Step 2 — Propose the Next Task
 
-After confirmation, create the issue that will track this feature through all 6 phases.
+Look at:
 
-> **Platform note:** Commands below use `gh` (GitHub CLI). Check the **Version Control** section in `.claude/CLAUDE.md` for your project's platform and substitute accordingly (e.g. `glab issue create` for GitLab).
+- Remaining (not-yet-satisfied) acceptance criteria on the epic
+- The epic's Scope section
+- Open child tasks (if any — these may need to close before a new one starts)
 
-Derive a `<feature-slug>` from the feature name (lowercase, hyphenated, e.g. `user-profile-editor`).
+Propose one task in this format:
 
-Run:
+> "Based on epic `#<epic#>`, the next task I'd pick is:
+> **<task title — imperative + object>**
+>
+> This addresses acceptance bullet: _<bullet>_.
+>
+> Proposed size: **small | medium | large** (based on `<reasons — which sizing criteria apply>`).
+>
+> Ready to create the child issue? Or pick a different task from the epic?"
+
+### Sizing criteria (same as legacy workflow)
+
+Count how many apply:
+
+1. Touches auth, payments, or data security
+2. Modifies database schema
+3. Introduces ≥1 new external dependency
+4. Changes a public API contract
+5. Spans ≥3 files of net-new code
+6. Has async/concurrent operations
+7. UX decisions are non-trivial
+
+- **Small** — 0 criteria. Copy tweak, flag wire-up, trivial endpoint.
+- **Medium** — 1–3 criteria.
+- **Large** — 4+ criteria. (Rare at the task level — if you land here, consider splitting the task and going back to propose the smaller piece.)
+
+The user confirms or picks an alternative. One exchange.
+
+---
+
+## Step 3 — Confirm Task Details
+
+Collect (briefly — this is not an interview):
+
+- **Task title** (imperative; the one you proposed or the user's alternative)
+- **Size** (confirm or override)
+- **Depends on** (other task issue IDs, if any; most tasks have none)
+- **Layer** (optional shorthand: `data` / `backend` / `frontend` / `cross-cutting`)
+
+If the user wants to add a 1-line scope note to the child body, accept it — otherwise the child defers scope/details to `/plan`.
+
+---
+
+## Step 4 — Create Child Task Issue
+
+Derive a `<task-slug>` from the task title (lowercase, hyphenated).
+Derive a `<feature-slug>` from the epic title (strip `Epic: ` prefix, slugify).
+
+> **Platform note:** commands below use `gh`. Substitute per `.claude/CLAUDE.md` §Per-project config.
+
 ```bash
 gh issue create \
-  --title "feat: <feature-name>" \
+  --title "feat(<feature-slug>): <task-title>" \
   --body "$(cat <<'EOF'
-## Feature: <feature-name>
+## Task: <task title>
 
-<1-2 sentence description from the understanding summary>
+**Part of:** #<epic#>
+**Depends on:** <#N, #M | "none">
+**Layer:** data | backend | frontend | cross-cutting
+**Branch:** feat/<feature-slug>/<task-slug>
 
-## Workflow Progress
-- [ ] Phase 1: Define
-- [ ] Phase 2: Spec
+## Scope note
+<1-line note from user, or "deferred to /plan">
+
+## Task Workflow Progress
+- [x] Phase 1: Define — YYYY-MM-DD
+- [ ] Phase 2: Plan
+- [ ] Phase 2b: Review Plan
 - [ ] Phase 3: Implement
 - [ ] Phase 4: Test
 - [ ] Phase 5: Review
 - [ ] Phase 6: Commit & PR
 
 ## Links
-- PRD: <path or "none">
-- Spec: (to be added in Phase 2)
+- Epic: #<epic#>
+- Plan: (to be added in Phase 2)
 - Branch: (to be added in Phase 3)
 - PR: (to be added in Phase 6)
 EOF
 )"
 ```
 
-Capture the issue number from the output (e.g. `#42`).
+Capture the returned child issue number. Call it `<N>`.
 
 ---
 
-## Step 5 — Post TL;DR Comment
-
-Post the Phase 1 TL;DR as a comment on the issue:
+## Step 5 — Post Phase 1 TL;DR on the Child
 
 ```bash
 gh issue comment <N> --body "$(cat <<'EOF'
 ## Phase 1 TL;DR: Define
 **Date:** YYYY-MM-DD
+**Size:** small | medium | large
 **Status:** Complete ✅
 
 ### What was done
-- Completed rigorous dialogue loop to establish shared understanding
-- [2-4 bullets summarising key things clarified]
+- Picked next task from epic #<epic#>
+- Created this child task issue
 
 ### Key decisions
-- Scope: [1-2 sentences]
-- Non-goals: [key exclusions]
-- Success metrics: [key metrics]
-- Open risks: [any unresolved risks noted]
-
-### Key artifacts
-- PRD: <path or "none">
-- Understanding summary: captured in this comment
+- Task: <task title>
+- Size: <size, with rationale in 1 line>
+- Layer: <layer>
+- Depends on: <list or "none">
 
 ### Next step
-Run `/clear`, then `/spec <N>` in a fresh session.
+Run `/clear`, then `/plan <N>` in a fresh session.
 EOF
 )"
 ```
 
 ---
 
-## Step 6 — Update Issue Checklist
+## Step 6 — Link Child on Parent Epic
 
-Mark Phase 1 complete in the issue body:
+Edit the parent epic's body to reference the new child under `## Child tasks`:
 
 ```bash
-gh issue edit <N> --body "$(cat <<'EOF'
-## Feature: <feature-name>
-
-<description>
-
-## Workflow Progress
-- [x] Phase 1: Define — <YYYY-MM-DD>
-- [ ] Phase 2: Spec
-- [ ] Phase 3: Implement
-- [ ] Phase 4: Test
-- [ ] Phase 5: Review
-- [ ] Phase 6: Commit & PR
-
-## Links
-- PRD: <path or "none">
-- Spec: (to be added in Phase 2)
-- Branch: (to be added in Phase 3)
-- PR: (to be added in Phase 6)
-EOF
-)"
+gh issue edit <epic#> --body "<...existing body with child appended to ## Child tasks section as: '- [ ] #<N> — <task title>'...>"
 ```
+
+Keep the list sorted by creation order.
+
+---
+
+## Step 7 — Living Doc Updates (never edit inline here)
+
+`/define` runs **before the feature branch exists**, so it must not edit `docs/ARCHITECTURE.md`, `docs/GLOSSARY.md`, or `docs/PRD.md` — any commit would go straight to `main`.
+
+If the user introduces a genuinely new domain term or architectural note while describing the task, record it in the Phase 1 TL;DR under a `### Planned doc updates` subsection. `/implement` picks up these notes and applies + commits them on the feature branch in Phase 3.
 
 ---
 
 ## Handoff
 
-Tell the user:
-
 > **Phase 1: Define — Complete ✅**
-> Issue #N created. View with your platform CLI (e.g. `gh issue view <N>` or `glab issue view <N>`).
+> Child task issue `#<N>` created, linked to epic `#<epic#>`.
 >
 > Next: Run `/clear` to start a fresh session, then run:
+>
 > ```
-> /spec <N>
+> /plan <N>
 > ```
