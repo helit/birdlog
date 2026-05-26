@@ -7,12 +7,13 @@ Reference document for the `test-driven-development` skill. These are patterns t
 ## Anti-Pattern 1: Testing Implementation Details
 
 **What it looks like:**
+
 ```js
 // ❌ Tests that the internal function was called, not that behaviour was correct
-expect(mockEncryptPassword).toHaveBeenCalledWith("secret123")
+expect(mockEncryptPassword).toHaveBeenCalledWith('secret123');
 
 // ✅ Tests the observable outcome
-expect(await login("user", "secret123")).toEqual({ success: true })
+expect(await login('user', 'secret123')).toEqual({ success: true });
 ```
 
 **Why it's harmful:** Refactoring the implementation (e.g. inlining `encryptPassword`) breaks the test even though behaviour didn't change.
@@ -22,12 +23,13 @@ expect(await login("user", "secret123")).toEqual({ success: true })
 ## Anti-Pattern 2: Mocking Everything
 
 **What it looks like:**
+
 ```js
 // ❌ Mocked so heavily it only tests the test itself
-const mockDb = { findUser: jest.fn().mockResolvedValue({ id: 1 }) }
-const mockCache = { get: jest.fn().mockReturnValue(null) }
-const mockLogger = { info: jest.fn() }
-const result = await getUser(1, mockDb, mockCache, mockLogger)
+const mockDb = { findUser: jest.fn().mockResolvedValue({ id: 1 }) };
+const mockCache = { get: jest.fn().mockReturnValue(null) };
+const mockLogger = { info: jest.fn() };
+const result = await getUser(1, mockDb, mockCache, mockLogger);
 ```
 
 **Why it's harmful:** The test passes even if the real database query is broken. Mock/prod divergence is a major source of "tests pass but prod is broken."
@@ -39,6 +41,7 @@ const result = await getUser(1, mockDb, mockCache, mockLogger)
 ## Anti-Pattern 3: Writing Tests After Code
 
 **What it looks like:**
+
 ```
 1. Write 200 lines of production code
 2. Write tests that match what the code already does
@@ -53,17 +56,18 @@ const result = await getUser(1, mockDb, mockCache, mockLogger)
 ## Anti-Pattern 4: Tests That Always Pass
 
 **What it looks like:**
+
 ```js
 // ❌ No assertion — always passes
-it("should process the order", async () => {
-  await processOrder(order)
-})
+it('should process the order', async () => {
+  await processOrder(order);
+});
 
 // ❌ Assertion that can never fail
-expect(result).toBeDefined()
+expect(result).toBeDefined();
 
 // ❌ Empty test
-it("should handle errors", () => {})
+it('should handle errors', () => {});
 ```
 
 **Why it's harmful:** These tests inflate your test count without providing any protection.
@@ -75,18 +79,20 @@ it("should handle errors", () => {})
 ## Anti-Pattern 5: Snapshot Tests as Regression Tests
 
 **What it looks like:**
+
 ```js
 // ❌ Snapshot that gets updated every time
-expect(renderComponent(<UserCard user={user} />)).toMatchSnapshot()
+expect(renderComponent(<UserCard user={user} />)).toMatchSnapshot();
 ```
 
 **Why it's harmful:** Developers habitually run `--updateSnapshot` when snapshots fail rather than investigating. This turns snapshot tests into approval tests with no actual assertions.
 
 **Guideline:** Test specific properties you care about, not an entire rendered output:
+
 ```js
 // ✅
-expect(screen.getByText(user.name)).toBeInTheDocument()
-expect(screen.getByRole("img", { name: /avatar/i })).toHaveAttribute("src", user.avatarUrl)
+expect(screen.getByText(user.name)).toBeInTheDocument();
+expect(screen.getByRole('img', { name: /avatar/i })).toHaveAttribute('src', user.avatarUrl);
 ```
 
 ---
@@ -94,15 +100,16 @@ expect(screen.getByRole("img", { name: /avatar/i })).toHaveAttribute("src", user
 ## Anti-Pattern 6: Shared Mutable State Between Tests
 
 **What it looks like:**
+
 ```js
 // ❌ Tests depend on execution order
-let userId
-it("creates a user", async () => {
-  userId = await createUser({ name: "Alice" })
-})
-it("fetches the created user", async () => {
-  const user = await getUser(userId) // fails if previous test didn't run
-})
+let userId;
+it('creates a user', async () => {
+  userId = await createUser({ name: 'Alice' });
+});
+it('fetches the created user', async () => {
+  const user = await getUser(userId); // fails if previous test didn't run
+});
 ```
 
 **Why it's harmful:** Tests pass in isolation, fail in suite, or vice versa. Order-dependent tests are fragile and hard to debug.
@@ -114,12 +121,13 @@ it("fetches the created user", async () => {
 ## Anti-Pattern 7: Asserting the Wrong Thing on Errors
 
 **What it looks like:**
+
 ```js
 // ❌ Only checks that an error was thrown, not which one
-await expect(createUser({})).rejects.toThrow()
+await expect(createUser({})).rejects.toThrow();
 
 // ✅ Checks the specific error
-await expect(createUser({})).rejects.toThrow("name is required")
+await expect(createUser({})).rejects.toThrow('name is required');
 ```
 
 **Why it's harmful:** The test passes for any error, including ones thrown by infrastructure failures (database down, import error) rather than the expected validation.
@@ -129,6 +137,7 @@ await expect(createUser({})).rejects.toThrow("name is required")
 ## Anti-Pattern 8: Test Coverage as a Goal
 
 **What it looks like:**
+
 - Adding tests to hit a coverage percentage target
 - Writing trivial getter/setter tests to inflate the number
 - Measuring success by "90% coverage" rather than "critical paths are tested"

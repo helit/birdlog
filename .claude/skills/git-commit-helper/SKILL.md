@@ -26,18 +26,18 @@ Generate a conventional commit message from staged changes.
 
 ## Types
 
-| Type | Use for |
-|------|---------|
-| `feat` | New feature |
-| `fix` | Bug fix |
+| Type       | Use for                                |
+| ---------- | -------------------------------------- |
+| `feat`     | New feature                            |
+| `fix`      | Bug fix                                |
 | `refactor` | Code restructuring, no behavior change |
-| `test` | Adding or fixing tests |
-| `docs` | Documentation only |
-| `style` | Formatting, no logic change |
-| `perf` | Performance improvement |
-| `build` | Build system or dependency changes |
-| `ci` | CI/CD configuration |
-| `chore` | Maintenance, tooling |
+| `test`     | Adding or fixing tests                 |
+| `docs`     | Documentation only                     |
+| `style`    | Formatting, no logic change            |
+| `perf`     | Performance improvement                |
+| `build`    | Build system or dependency changes     |
+| `ci`       | CI/CD configuration                    |
+| `chore`    | Maintenance, tooling                   |
 
 ## Process
 
