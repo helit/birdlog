@@ -78,3 +78,13 @@ You can also open http://localhost:4000/graphql to access Apollo Server's GraphQ
 | `npm run db:seed` | Re-seed the database |
 | `docker compose up -d` | Start the database |
 | `docker compose down` | Stop the database |
+
+## Deploying to production
+
+```bash
+ssh henrik@192.168.0.10
+cd /var/www/birdlog
+./scripts/deploy.sh
+```
+
+See [`docs/runbooks/deploy.md`](docs/runbooks/deploy.md) for what the script does, prerequisites, and troubleshooting.
