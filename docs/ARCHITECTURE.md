@@ -1,6 +1,6 @@
 # Architecture — BirdLog
 
-> Living document. Updated by `/explore-architecture` and during phase runs. Last reconciled: 2026-05-26 (migration from `docs/architecture/system-overview.md`).
+> Living document. Updated by `/explore-architecture` and during phase runs. Last reconciled: 2026-05-26.
 
 ## Tech Stack
 
@@ -10,7 +10,11 @@
 | Frontend | React 18 + Vite 6 + TailwindCSS 4 + Apollo Client 3 |
 | Routing | react-router-dom v7 |
 | UI Components | shadcn/ui + Base UI |
+| Maps | Leaflet 1.9 + react-leaflet 4 |
 | Backend | Express 4 + Apollo Server 4 (GraphQL) |
+| Auth | JWT (jsonwebtoken) + bcrypt password hashing |
+| Server hardening | helmet, compression, morgan, express-rate-limit |
+| AI SDK | openai (Node SDK) for photo + guided identification |
 | ORM / Database | Prisma 6 + PostgreSQL 15 |
 | Unit / Integration Tests | Vitest |
 | E2E Tests | Playwright |
@@ -33,22 +37,24 @@ packages/
 ### Client (`packages/client/src/`)
 
 - `pages/` — route-level components (IdentifyPage, SightingsPage, BirdInfoPage, Fågelbok, etc.)
-- `components/` — shared UI (Button, BottomSheet, HeroCard, GuidebookRow, etc.)
+- `components/` — shared UI (BottomNav, RarityBadge, SightingCard, SightingMap, `ui/` shadcn primitives, etc.)
 - `graphql/` — Apollo Client setup, queries, mutations
-- `hooks/` — custom React hooks
-- `lib/` — utility helpers
+- `context/` — React contexts (AuthContext)
+- `lib/` — utility helpers (rarity colours, sort helpers, guidebook search state)
+- `utils/` — shared TypeScript types
 
 ### Server (`packages/server/src/`)
 
 - `schema/` — GraphQL `typeDefs` and `resolvers`
-- `services/` — business logic (rarity calculation, species enrichment, Artdatabanken integration, caching)
-- `middleware/` — auth, rate limiting, CORS, compression
+- `services/` — business logic (rarity calculation, species enrichment, Artdatabanken integration, OpenAI identification)
+- `middleware/` — auth (JWT context loader)
+- `backfill/` — one-off backfill helpers (taxonomy-core)
 - `data/` — static data (Swedish taxonomy fallbacks, etc.)
-- `utils/` — pure helpers (normalize, slug)
+- `utils/` — pure helpers (normalize, slug, error classification)
 
 ### Database (`packages/server/prisma/`)
 
-- `schema.prisma` — Prisma schema (User, Species, Sighting, NearbyBirdsCache)
+- `schema.prisma` — Prisma schema (User, Species, Sighting, AreaDistributionCache)
 - `migrations/` — Prisma migration history
 - `backfill-taxonomy.ts` — one-off backfill for the Fågelbok taxonomy columns
 - See also: [`docs/architecture/data-model.md`](architecture/data-model.md) for entity-level detail.
@@ -84,8 +90,11 @@ See [`docs/customer/integrations.md`](customer/integrations.md) for API keys, ra
 ## Compliance & Security Notes
 
 - GDPR considerations documented in [`docs/customer/compliance.md`](customer/compliance.md)
+- JWT-based authentication; user passwords stored as bcrypt hashes
+- `helmet` sets security headers in production (CSP enabled in prod, disabled in dev so Vite HMR works)
+- General `/api` + `/graphql` rate limit: 100 req/min/IP; stricter `/api/identify` limit: 10 req/min/IP (caps OpenAI cost)
 - Server-side image proxy avoids exposing Wikimedia URLs directly to the client (CORS + caching)
-- Per-IP rate limiting on Artdatabanken-backed endpoints to stay within API quotas
+- Server fails fast on missing required env vars (`JWT_SECRET`, `OPENAI_API_KEY`, `ARTDATABANKEN_API_KEY`)
 - Server reads secrets from `packages/server/.env`; never commit `.env*` files (gitignored)
 
 ## Deployment

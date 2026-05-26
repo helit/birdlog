@@ -1,6 +1,6 @@
 # Glossary
 
-> Living document. Project-specific terminology only — generic engineering terms do not belong here. Updated by `/build-glossary` and during phase runs when new domain terms land. Last reconciled: 2026-05-26 (migration from root `GLOSSARY.md`).
+> Living document. Project-specific terminology only — generic engineering terms do not belong here. Updated by `/build-glossary` and during phase runs when new domain terms land. Last reconciled: 2026-05-26.
 
 ## Domain
 
@@ -9,13 +9,17 @@
 - **Rarity context** — how common/uncommon a species is in a given area+time, calculated from Artdatabanken data.
 - **Rarity levels** — `very_common`, `common`, `uncommon`, `rare`, `not_observed` (called "Unikt fynd" in UI).
 - **Report count** — number of unique observation reports (not individual birds); a flock of 50 = 1 report.
-- **Artdatabanken** — Swedish biodiversity data authority; provides species observation API.
+- **Rolling window** — the 30-day backward time window used to query Artdatabanken and to key the area distribution cache; advances daily as the window moves.
+- **Artdatabanken** — Swedish biodiversity data authority; provides species observation API. _See also: SOS._
 - **Artportalen** — public-facing portal for Artdatabanken data (used for validation).
+- **Taxon aggregation** — Artdatabanken SOS endpoint (`/Observations/TaxonAggregation`) returning per-taxon observation counts for an area+window; primary input to rarity calculation.
+- **Area distribution cache** — Postgres table (`AreaDistributionCache`) keyed by area + rolling window that stores the Artdatabanken taxon aggregation rollup; avoids re-hitting SOS on every rarity lookup.
 
 ## App Concepts
 
 - **Identify page** — landing page (`/`); shows nearby birds + action buttons for photo/guided ID.
 - **Hero card** — the prominent card at top of IdentifyPage showing rarest nearby bird.
+- **Nearby bird** — a single candidate species surfaced on the Identify page with rarity context; GraphQL type `NearbyBird` grouped into `hero` / `common` / `uncommon` buckets in `NearbyBirdsResult`.
 - **Guided ID** — 4-step wizard (size → colors → habitat → notes) that sends description to GPT-4o.
 - **Photo ID** — camera capture → GPT-4o vision analysis → species candidates.
 - **Bird info page** — general species page (`/bird/:slug`); shows Wikipedia info + live rarity.
@@ -31,6 +35,10 @@
 - **Sort key** — an identifier string for a sighting sort order (e.g. `date-desc`, `species-asc`) (Swedish UI: "Sortering").
 - **Bottom sheet** — a modal panel that slides up from the bottom of the screen, used for contextual option selection.
 - **Flat list** — a sightings list rendered without section/month headers, used for non-date sort orders.
+
+## Acronyms
+
+- **SOS** — Species Observation System; Artdatabanken's observation API surface (`TaxonAggregation`, `Observations/Search`, etc.).
 
 ## Historical Phases (pre-SDD)
 
