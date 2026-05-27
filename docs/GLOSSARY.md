@@ -1,6 +1,6 @@
 # Glossary
 
-> Living document. Project-specific terminology only — generic engineering terms do not belong here. Updated by `/build-glossary` and during phase runs when new domain terms land. Last reconciled: 2026-05-26.
+> Living document. Project-specific terminology only — generic engineering terms do not belong here. Updated by `/build-glossary` and during phase runs when new domain terms land. Last reconciled: 2026-05-27.
 
 ## Domain
 
@@ -29,6 +29,14 @@
 - **Order (Ordning)** — taxonomic rank above family (e.g. Passeriformes / Tättingar); added to `Species` in the Fågelbok feature.
 - **Family (Familj)** — taxonomic rank above species (e.g. Paridae / Mesar); `Species.family` holds the Swedish name, `Species.familyScientific` the Latin name.
 - **Taxonomy backfill** — one-time script (`npm run backfill:taxonomy`) that enriches existing seeded species with order + scientific family/order via Artdatabanken, with a static JSON fallback.
+
+## Social (planned)
+
+> Not yet implemented — terms reserved from `docs/PRD.md` for the planned read-only social layer.
+
+- **Friend request** — a one-directional invite from one user to another; becomes a friendship only when the recipient accepts.
+- **Mutual friendship** — the consented, bidirectional link created when a friend request is accepted; the precondition for any sighting data being shared between two users. _See also: Shared sighting._
+- **Shared sighting** — a sighting (including coordinates) made visible to a mutually-accepted friend; read-only, with no reactions, notifications, or ranking. _See also: Mutual friendship, Sighting._
 
 ## UI Patterns
 
