@@ -33,5 +33,14 @@
   },
   "dependencies": {
     "date-fns": "^4.1.0"
+  },
+  "allowScripts": {
+    "@apollo/protobufjs": true,
+    "@prisma/client": true,
+    "@prisma/engines": true,
+    "bcrypt": true,
+    "esbuild": true,
+    "fsevents": true,
+    "prisma": true
   }
 }
