@@ -1,5 +1,7 @@
 # Stage 1: Install dependencies
-FROM node:20-slim AS deps
+# Full image, not -slim: Prisma downloads engines for the OpenSSL it finds at install
+# time, and slim has none. The runtime stage can't fetch the right one as non-root.
+FROM node:24 AS deps
 WORKDIR /app
 COPY package*.json ./
 COPY packages/client/package*.json ./packages/client/
@@ -20,9 +22,9 @@ RUN npx prisma generate --schema=packages/server/prisma/schema.prisma
 RUN npm run build --workspace=packages/server
 
 # Stage 4: Production image
-# node:20 (full) includes OpenSSL needed by Prisma at runtime
+# node:24 (full) includes OpenSSL needed by Prisma at runtime
 # node_modules copied from server-build — no npm install or network access needed here
-FROM node:20 AS production
+FROM node:24 AS production
 WORKDIR /app
 
 COPY --from=server-build /app/node_modules ./node_modules
@@ -45,6 +47,9 @@ COPY --from=client-build /app/packages/client/dist/ ./packages/client/dist/
 ENV NODE_ENV=production
 ENV PORT=4000
 EXPOSE 4000
+
+# Run as the image's unprivileged `node` user, not root
+USER node
 
 # Run migrations then start server
 CMD npx prisma migrate deploy --schema=packages/server/prisma/schema.prisma && node packages/server/dist/index.js
